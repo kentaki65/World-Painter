@@ -43,39 +43,39 @@ const schema0 = avro.Type.forSchema({
 
 function getMaxUsedHeight(state) {
   let max = 0;
-
   for (let z = 0; z < heightLength; z++) {
     for (let x = 0; x < widthLength; x++) {
       const h = state.map[z][x];
       if (h > max) max = h;
     }
   }
-
   return max;
 }
 
-function convertChunks(state) {
+export function convertChunks(state) {
   const chunks = [];
   const chunkSize = 32;
 
   const chunkCountX = chunkLenX;
-	const maxUsedHeight = getMaxUsedHeight(state);
-	const chunkCountY = Math.ceil(maxUsedHeight / 32);
   const chunkCountZ = chunkLenZ;
+
+  const maxUsedHeight = getMaxUsedHeight(state);
+  const chunkCountY = Math.ceil(maxUsedHeight / chunkSize);
 
   for (let cx = 0; cx < chunkCountX; cx++) {
     for (let cy = 0; cy < chunkCountY; cy++) {
       for (let cz = 0; cz < chunkCountZ; cz++) {
 
         const blocks = [];
+        let isEmpty = true;
 
         for (let x = 0; x < chunkSize; x++) {
           for (let y = 0; y < chunkSize; y++) {
             for (let z = 0; z < chunkSize; z++) {
 
-              const wx = cx * 32 + x;
-              const wy = cy * 32 + y;
-              const wz = cz * 32 + z;
+              const wx = cx * chunkSize + x;
+              const wy = cy * chunkSize + y;
+              const wz = cz * chunkSize + z;
 
               let id = 0;
 
@@ -87,29 +87,60 @@ function convertChunks(state) {
                 else if (wy < height) id = nameToId[surfaceBlock] ?? 1;
               }
 
+              if (id !== 0) isEmpty = false;
               blocks.push(id);
             }
           }
         }
 
-        chunks.push({
-          x: cx,
-          y: cy,
-          z: cz,
-          blocks: blocks
-        });
+        if (!isEmpty) {
+          chunks.push({
+            x: cx,
+            y: cy,
+            z: cz,
+            blocks: blocks
+          });
+        }
       }
     }
   }
 
+  if (chunks.length === 0) {
+    return {
+      name: "empty",
+      pos: [0, 0, 0],
+      size: [32, 32, 32],
+      chunks: []
+    };
+  }
+
+  let minCX = Infinity, minCY = Infinity, minCZ = Infinity;
+  let maxCX = -Infinity, maxCY = -Infinity, maxCZ = -Infinity;
+
+  for (const c of chunks) {
+    if (c.x < minCX) minCX = c.x;
+    if (c.y < minCY) minCY = c.y;
+    if (c.z < minCZ) minCZ = c.z;
+
+    if (c.x > maxCX) maxCX = c.x;
+    if (c.y > maxCY) maxCY = c.y;
+    if (c.z > maxCZ) maxCZ = c.z;
+  }
+
+  for (const c of chunks) {
+    c.x -= minCX;
+    c.y -= minCY;
+    c.z -= minCZ;
+  }
+
+  const sizeX = (maxCX - minCX + 1) * chunkSize;
+  const sizeY = (maxCY - minCY + 1) * chunkSize;
+  const sizeZ = (maxCZ - minCZ + 1) * chunkSize;
+
   return {
-    name: "test_3d",
+    name: "optimized",
     pos: [0, 0, 0],
-    size: [
-      chunkCountX * 32,
-      chunkCountY * 32,
-      chunkCountZ * 32
-    ],
+    size: [sizeX, sizeY, sizeZ],
     chunks: chunks
   };
 }
