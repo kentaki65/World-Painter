@@ -52,7 +52,7 @@ function getMaxUsedHeight(state) {
   return max;
 }
 
-export function convertChunks(state) {
+function convertChunks(state) {
   const chunks = [];
   const chunkSize = 32;
 
