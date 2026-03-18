@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module" src="./codes/main.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+  <title>Document</title>
+</head>
+<body>
+  <div class="screen">
+    <div class="dropdown">
+      <div class="option">
+        <div class="nameLabel">file</div>
+        <div class="dropdownMenu">
+          <button type="button" class="dropdownButton" id="newFile">new</button>
+          <input type="file" id="fileInput" style="display:none">
+          <button type="button" class="attached" id="openFile">open file</button>
+          <input type="file" id="exportInput" style="display:none">
+          <button type="button" class="attached" id="exportFile">export file</button>
+        </div>
+      </div>
+      <div class="option">
+        <div class="nameLabel">edit</div>
+        <div class="dropdownMenu">
+          <button type="button" class="dropdownButton">foo</button>
+          <button type="button" class="dropdownButton">foo</button>
+        </div>
+      </div>
+      <div class="option">
+        <div class="nameLabel">view</div>
+        <div class="dropdownMenu">
+          <button type="button" class="dropdownButton">foo</button>
+          <button type="button" class="dropdownButton">foo</button>
+        </div>
+      </div>
+    </div>
+    <div class="viewer">
+      <div class="toolsColumn">
+        <div class="labels">tools</div>
+        <div class="toolsUi">
+          <button class="Button" title="spray paint: spray paint any terrain. layer or biome onto the world" id="sprayPaint">
+            <i class="fa-solid fa-spray-can"></i>
+          </button>
+          <button class="Button" title="height: raise or lower the terrain" id="height">
+            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+          </button>
+          <button class="Button" title="flatten: flatten an area" id="flatten">
+            <i class="fa-solid fa-arrow-down-up-across-line"></i>
+          </button>
+          <button class="Button" title="smooth: smooth the terrain out" id="smooth">
+            <i class="fa-solid fa-arrows-to-circle"></i>
+          </button>
+          <button class="Button" id="layerPaint">
+            <i class="fa-solid fa-layer-group"></i>
+          </button>
+        </div>
+        <div class="labels">layers</div>
+        <div class="layerUI">
+          <button class="Button" title="Frost: cover ground with snow and turn water to ice" id="layerFrost">
+            <i class="fa-regular fa-snowflake"></i>Frost
+          </button>
+          <button class="Button" title="Delicious Forest: Generate Delicious Forest" id="layerDeliciousForest">
+            <i class="fa-solid fa-tree"></i>Delicious Forest
+          </button>
+          <button class="Button" title="Pine: Generate pine forest" id="layerPineForest">
+            <i class="fa-solid fa-tree"></i>Pine
+          </button>
+        </div>
+        <div class="labels">blocks</div>
+        <div class="blocksUI">
+          <button class="BlockButton" title="dirt" id="blockDirt">
+            <img src="blocksIcon/Dirt.webp" width="24">
+          </button>
+          <button class="BlockButton" title="grass" id="blockGrass">
+            <img src="blocksIcon/Grass_Block.webp" width="24">
+          </button>
+          <button class="BlockButton" title="sand" id="blockSand">
+            <img src="blocksIcon/sand.webp" width="24">
+          </button>
+          <button class="BlockButton" title="redSand" id="blockRedSand">
+            <img src="blocksIcon/Red_Sand.png" width="24">
+          </button>
+          <button class="BlockButton" title="stone" id="blockStone">
+            <img src="blocksIcon/Stone.webp" width="24">
+          </button>
+          <button class="BlockButton" title="messyStone" id="blockMessyStone">
+            <img src="blocksIcon/Messy_Stone.webp" width="24">
+          </button>
+          <button class="BlockButton" title="gravel" id="blockGravel">
+            <img src="blocksIcon/Gravel.webp" width="24">
+          </button>
+          <button class="BlockButton" title="clay" id="blockClay">
+            <img src="blocksIcon/Clay.webp" width="24">
+          </button>
+          <button class="BlockButton" title="andesite" id="blockAndesite">
+            <img src="blocksIcon/Andesite.webp" width="24">
+          </button>
+          <button class="BlockButton" title="diorite" id="blockDiorite">
+            <img src="blocksIcon/Diorite.webp" width="24">
+          </button>
+          <button class="BlockButton" title="granite" id="blockGranite">
+            <img src="blocksIcon/Granite.webp" width="24">
+          </button>
+          <button class="BlockButton" title="snow" id="blockSnow">
+            <img src="blocksIcon/Snow.png" width="24">
+          </button>
+        </div>
+      </div>
+      <canvas id="canvas"></canvas>
+    </div>
+    <div class="underbar" id="underbar">
+      <div class="child" id="location">Location: 0, 0</div>
+      <div class="child" id="heightchild">Height: 0</div>
+      <div class="child" id="brushSize">Size: 3</div>
+      <div class="child" id="zoom">Zoom: </div>
+      <div class="child" id="mode">Mode: height</div>
+      <div class="child" id="layer">Layer: none</div>
+      <div class="child" id="selectBlock">Block: stone</div>
+    </div>
+  </div>
+</body>
+</html>
