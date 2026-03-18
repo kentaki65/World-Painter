@@ -4,6 +4,9 @@ import {
 } from "./state.js";
 import { heightClamp, lerp } from "./utils.js";
 
+let kernelCache = null;
+let kernelRadius = -1;
+
 function normalBrush(cellX, cellY){
   for(let dy = -state.brushRadius; dy <= state.brushRadius; dy++){
     for(let dx = -state.brushRadius; dx <= state.brushRadius; dx++){
@@ -37,42 +40,80 @@ function normalBrush(cellX, cellY){
     }
   }
 }
-function smoothBrush(cellX, cellY){
-  const copy = state.map.map(row => row.slice());
-  const sigma = state.brushRadius / 2;
+
+function getKernel(radius){
+  if(kernelCache && kernelRadius === radius) return kernelCache;
+
+  const sigma = radius / 2;
   const twoSigmaSq = 2 * sigma * sigma;
-  for(let dy = -state.brushRadius; dy <= state.brushRadius; dy++){
-    for(let dx = -state.brushRadius; dx <= state.brushRadius; dx++){
+
+  const size = radius * 2 + 1;
+  const kernel = [];
+
+  for(let y = -radius; y <= radius; y++){
+    const row = [];
+    for(let x = -radius; x <= radius; x++){
+      const d2 = x*x + y*y;
+      if(d2 > radius*radius){
+        row.push(0);
+      } else {
+        row.push(Math.exp(-d2 / twoSigmaSq));
+      }
+    }
+    kernel.push(row);
+  }
+
+  kernelCache = kernel;
+  kernelRadius = radius;
+  return kernel;
+}
+
+function smoothBrush(cellX, cellY){
+  const r = state.brushRadius;
+  const kernel = getKernel(r);
+
+  const minX = Math.max(0, cellX - r);
+  const maxX = Math.min(widthLength - 1, cellX + r);
+  const minY = Math.max(0, cellY - r);
+  const maxY = Math.min(heightLength - 1, cellY + r);
+
+  const copy = [];
+  for(let y = minY; y <= maxY; y++){
+    copy.push(state.map[y].slice(minX, maxX + 1));
+  }
+
+  for(let dy = -r; dy <= r; dy++){
+    for(let dx = -r; dx <= r; dx++){
       const x = cellX + dx;
       const y = cellY + dy;
-      const distance = Math.hypot(dx, dy);
-      if(distance > state.brushRadius) continue;
+      if(x < 0 || x >= widthLength || y < 0 || y >= heightLength) continue;
+      const d2 = dx*dx + dy*dy;
+      if(d2 > r*r) continue;
       let sum = 0;
       let weightSum = 0;
-      for(let ky = -state.brushRadius; ky <= state.brushRadius; ky++){
-        for(let kx = -state.brushRadius; kx <= state.brushRadius; kx++){
+      for(let ky = -r; ky <= r; ky++){
+        for(let kx = -r; kx <= r; kx++){
           const nx = x + kx;
           const ny = y + ky;
-          if(ny < 0 || ny >= copy.length) continue;
-          if(nx < 0 || nx >= copy[ny].length) continue;
-          const value = copy[ny][nx];
-          if(!Number.isFinite(value)) continue;
-          const d = Math.hypot(kx, ky);
-          if(d > state.brushRadius) continue;
-          const weight = Math.exp(-(d*d) / twoSigmaSq);
+          if(nx < minX || nx > maxX || ny < minY || ny > maxY) continue;
+          const weight = kernel[ky + r][kx + r];
+          if(weight === 0) continue;
+          const value = copy[ny - minY][nx - minX];
           sum += value * weight;
           weightSum += weight;
         }
       }
       if(weightSum === 0) continue;
       const avg = sum / weightSum;
-      const normalized = 1 - distance / state.brushRadius;
-      const strength = 0.15 * normalized;
-      state.map[y][x] = heightClamp(lerp(copy[y][x], avg, strength));
+      const distFactor = 1 - (d2 / (r*r));
+      const strength = 0.15 * distFactor;
+
+      state.map[y][x] = heightClamp(
+        lerp(state.map[y][x], avg, strength)
+      );
     }
   }
 }
-
 function sprayBrush(cellX, cellY){
   const density = state.brushRadius * 3;
   for(let i = 0; i < density; i++){
