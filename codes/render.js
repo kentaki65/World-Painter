@@ -3,8 +3,6 @@ import {
   cellSize, widthLength, heightLength, maxHeight, contour, DEFAULT_COLOR,
   blockColors, layerColors,
 } from "./state.js";
-import { clamp } from "./utils.js";
-
 
 function drawBrushPreview(canvas){
   const ctx = canvas.getContext("2d");
@@ -12,21 +10,18 @@ function drawBrushPreview(canvas){
 
   ctx.beginPath();
   ctx.arc(state.mouseX, state.mouseY, radius, 0, Math.PI * 2);
-
   ctx.strokeStyle = "white";
   ctx.lineWidth = 2;
   ctx.stroke();
 }
 
-function drawChunkGrid(ctx, canvas, size) {
+function drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY) {
   const chunk = 32;
-  const step = chunk * size;
 
   ctx.strokeStyle = "rgba(255,255,255,0.2)";
   ctx.lineWidth = 1;
 
-  // 縦線
-  for (let x = 0; x <= widthLength; x += chunk) {
+  for (let x = Math.floor(startX / chunk) * chunk; x <= endX; x += chunk) {
     const px = x * size + state.camX;
 
     ctx.beginPath();
@@ -35,8 +30,7 @@ function drawChunkGrid(ctx, canvas, size) {
     ctx.stroke();
   }
 
-  // 横線
-  for (let y = 0; y <= heightLength; y += chunk) {
+  for (let y = Math.floor(startY / chunk) * chunk; y <= endY; y += chunk) {
     const py = y * size + state.camY;
 
     ctx.beginPath();
@@ -49,22 +43,30 @@ function drawChunkGrid(ctx, canvas, size) {
 export function draw(canvas){
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   const size = cellSize * state.zoom;
-  for (let y = 0; y < state.map.length; y++) {
-    for (let x = 0; x < state.map[y].length; x++) {
+
+  const startX = Math.max(0, Math.floor(-state.camX / size));
+  const startY = Math.max(0, Math.floor(-state.camY / size));
+  const endX = Math.min(widthLength, Math.ceil((canvas.width - state.camX) / size));
+  const endY = Math.min(heightLength, Math.ceil((canvas.height - state.camY) / size));
+
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+
+      const h = state.map[y][x];
+      const baseColor = blockColors[state.blockMap[y][x]] ?? DEFAULT_COLOR;
 
       const isRange = x > 0 && y > 0 && x < widthLength-1 && y < heightLength-1;
-      const baseColor = blockColors[state.blockMap[y][x]] ?? DEFAULT_COLOR;
 
       const diffWidth = isRange ? state.map[y][x-1] - state.map[y][x+1] : 0;
       const diffHeight = isRange ? state.map[y-1][x] - state.map[y+1][x] : 0;
 
-      const shade = -(diffWidth + diffHeight);
-      const brightness = 1 + shade * 0.02;
+      const brightness = 1 + (-(diffWidth + diffHeight)) * 0.02;
 
-      const r = clamp(baseColor[0] * brightness);
-      const g = clamp(baseColor[1] * brightness);
-      const b = clamp(baseColor[2] * brightness);
+      const r = baseColor[0] * brightness | 0;
+      const g = baseColor[1] * brightness | 0;
+      const b = baseColor[2] * brightness | 0;
 
       ctx.fillStyle = `rgb(${r},${g},${b})`;
 
@@ -72,7 +74,7 @@ export function draw(canvas){
       const py = y * size + state.camY;
 
       ctx.fillRect(px, py, size, size);
-      
+
       const layer = state.layerMap[y][x];
       if(layer){
         const c = layerColors[layer];
@@ -82,12 +84,11 @@ export function draw(canvas){
         }
       }
 
-      const h = state.map[y][x];
+      const level = (h / contour) | 0;
 
       if (x < widthLength - 1) {
-        const right = state.map[y][x+1];
-        if (Math.floor(h/contour) !== Math.floor(right/contour)) {
-
+        const rightLevel = (state.map[y][x+1] / contour) | 0;
+        if (level !== rightLevel) {
           ctx.beginPath();
           ctx.moveTo((x+1)*size + state.camX, y*size + state.camY);
           ctx.lineTo((x+1)*size + state.camX, (y+1)*size + state.camY);
@@ -97,9 +98,8 @@ export function draw(canvas){
       }
 
       if (y < heightLength - 1) {
-        const down = state.map[y+1][x];
-        if (Math.floor(h/contour) !== Math.floor(down/contour)) {
-
+        const downLevel = (state.map[y+1][x] / contour) | 0;
+        if (level !== downLevel) {
           ctx.beginPath();
           ctx.moveTo(x*size + state.camX, (y+1)*size + state.camY);
           ctx.lineTo((x+1)*size + state.camX, (y+1)*size + state.camY);
@@ -109,6 +109,7 @@ export function draw(canvas){
       }
     }
   }
-  drawChunkGrid(ctx, canvas, size);
+
+  drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY);
   drawBrushPreview(canvas);
 }
