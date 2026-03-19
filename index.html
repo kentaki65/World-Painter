@@ -17,7 +17,7 @@
       <div class="option">
         <div class="nameLabel">file</div>
         <div class="dropdownMenu">
-          <button type="button" class="dropdownButton" id="newFile">new</button>
+          <button type="button" class="dropdownButton" id="newFile">new palette</button>
           <input type="file" id="fileInput" style="display:none">
           <button type="button" class="attached" id="openFile">open file</button>
           <input type="file" id="exportInput" style="display:none">
@@ -82,9 +82,6 @@
           <button class="BlockButton" title="sand" id="blockSand">
             <img src="blocksIcon/sand.webp" width="24">
           </button>
-          <button class="BlockButton" title="redSand" id="blockRedSand">
-            <img src="blocksIcon/Red_Sand.png" width="24">
-          </button>
           <button class="BlockButton" title="stone" id="blockStone">
             <img src="blocksIcon/Stone.webp" width="24">
           </button>
@@ -114,13 +111,14 @@
       <canvas id="canvas"></canvas>
     </div>
     <div class="underbar" id="underbar">
-      <div class="child" id="location">Location: 0, 0</div>
+      <div class="child" id="location">Location: 0, 0, grass</div>
       <div class="child" id="heightchild">Height: 0</div>
       <div class="child" id="brushSize">Size: 3</div>
       <div class="child" id="zoom">Zoom: </div>
       <div class="child" id="mode">Mode: height</div>
       <div class="child" id="layer">Layer: none</div>
       <div class="child" id="selectBlock">Block: stone</div>
+      <progress id="progressBar" value="0" max="100"></progress>
     </div>
   </div>
 </body>

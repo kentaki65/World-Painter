@@ -1,6 +1,6 @@
 const chunkSize = 32;
-export const chunkLenX = 14;
-export const chunkLenZ = 14;
+export const chunkLenX = 2;
+export const chunkLenZ = 2;
 
 export const cellSize = 10;
 export const widthLength = chunkSize*chunkLenX;
@@ -10,18 +10,17 @@ export const contour = 5;
 export const DEFAULT_COLOR = [255,0,255];
 
 export const blockColors = {
-  dirt: [120, 85, 60],
-  grass: [20,120,40],
-  sand: [200,190,120],
-  redSand: [190,110,70],
-  stone: [120,120,120],
-  messyStone: [110,110,110],
-  gravel: [130,130,130],
-  clay: [150,160,170],
-  andesite: [140,140,145],
-  diorite: [210,210,210],
-  granite: [150,110,100],
-  snow: [240,240,240]
+  "Dirt": [120, 85, 60],
+  "Grass Block": [20,120,40],
+  "Sand": [200,190,120],
+  "Stone": [120,120,120],
+  "Messy Stone": [110,110,110],
+  "Gravel": [130,130,130],
+  "Clay": [150,160,170],
+  "Andesite": [140,140,145],
+  "Diorite": [210,210,210],
+  "Granite": [150,110,100],
+  "Snow": [240,240,240]
 };
 
 export const layerColors = {
@@ -34,7 +33,7 @@ export const mapInit = () =>
   Array.from({ length: heightLength }, () => new Array(widthLength).fill(0));
 
 export const blockMapInit = () =>
-  Array.from({ length: heightLength }, () => new Array(widthLength).fill("grass"));
+  Array.from({ length: heightLength }, () => new Array(widthLength).fill("Grass Block"));
 
 export const layerMapInit = () =>
   Array.from({ length: heightLength }, () => Array(widthLength).fill(null));
