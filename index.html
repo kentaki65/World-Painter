@@ -60,9 +60,6 @@
         </div>
         <div class="labels">layers</div>
         <div class="layerUI">
-          <button class="Button" title="Frost: cover ground with snow and turn water to ice" id="layerFrost">
-            <i class="fa-regular fa-snowflake"></i>Frost
-          </button>
           <button class="Button" title="Delicious Forest: Generate Delicious Forest" id="layerDeliciousForest">
             <i class="fa-solid fa-tree"></i>Delicious Forest
           </button>
@@ -107,18 +104,18 @@
           </button>
         </div>
         <div class="sliders">
-          <div class="labels">settings/placeholder</div>
+          <div class="labels">settings</div>
           <label for="fileName">fileName</label>
           <input type="text" id="volume" name="fileName" placeholder="File name"/>
           <label>
-            paletteSize: <input type="number" id="paletteSize" value="4" min="1">
+            paletteSize: <input type="number" id="paletteSize" value="4" min="1" max="12">
           </label>
           <label>
-            maxHeight: <input type="number" id="maxHeight" value="64" min="32">
+            maxHeight: <input type="number" id="maxHeight" value="64" min="32" max="256">
           </label>
         </div>
         <div class="advancedSettings">
-          <div class="labels">Advanced settings/placeholder</div>
+          <div class="labels">Advanced settings</div>
           <label for="defaultBlock">defaultBlock</label>
           <select name="block" id="defaultBlock">
             <option value="">--Please select one--</option>

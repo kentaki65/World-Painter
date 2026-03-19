@@ -133,7 +133,7 @@ export function eventInit() {
   });
 
   paletteSizeInput.addEventListener("input", (e) => {
-    const newSize = parseInt(e.target.value) || 16;
+    const newSize = parseInt(e.target.value) || 8;
     resizeMap(newSize, newSize);
     console.log("palette resized:", newSize, "width:", state.widthLength, "height:", state.heightLength);
   });

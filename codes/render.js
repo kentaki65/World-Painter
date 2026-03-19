@@ -40,25 +40,6 @@ function drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY) {
   }
 }
 
-function drawSplitLines(ctx, canvas, state) {
-  const chunk = 32;
-  const size = cellSize * state.zoom;
-  const totalChunksX = state.widthLength;
-  const zySize = Math.ceil(state.heightLength / chunk) * Math.ceil(state.widthLength / chunk);
-  const sliceSize = Math.floor(200 / zySize);
-
-  for (let x = sliceSize * chunk; x < totalChunksX; x += sliceSize * chunk) {
-    const px = x * size + state.camX;
-
-    ctx.beginPath();
-    ctx.moveTo(px, 0);
-    ctx.lineTo(px, canvas.height);
-    ctx.strokeStyle = "rgba(255,0,0,0.5)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-}
-
 export function draw(canvas){
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -98,7 +79,11 @@ export function draw(canvas){
       if(layer){
         const c = layerColors[layer];
         if(c){
-          ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},0.35)`;
+          if(layer === state.selectedLayer){
+            ctx.fillStyle = `rgba(50,255,50,0.5)`;
+          } else {
+            ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},0.35)`;
+          }
           ctx.fillRect(px, py, size, size);
         }
       }
@@ -130,6 +115,5 @@ export function draw(canvas){
   }
 
   drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY);
-  drawSplitLines(ctx, canvas, state);
   drawBrushPreview(canvas);
 }

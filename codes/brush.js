@@ -136,12 +136,13 @@ function layerBrush(cellX, cellY){
     const dy = Math.round(Math.sin(angle)*radius);
     const x = cellX + dx;
     const y = cellY + dy;
+
     if(x<0 || y<0 || x>=state.widthLength || y>=state.heightLength) continue;
     if(state.leftDown){
-      layerMap[y][x] = selectedLayer;
+      state.layerMap[y][x] = state.selectedLayer;
     }
     if(state.rightDown){
-      layerMap[y][x] = null;
+      state.layerMap[y][x] = null;
     }
   }
 }

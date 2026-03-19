@@ -73,9 +73,15 @@ function convertChunks(state) {
               if (wx < state.widthLength && wz < state.heightLength && wy < state.maxHeight) {
                 const height = state.map[wz][wx];
                 const surfaceBlock = state.blockMap[wz][wx];
+								const depthFromTop = height - wy;
 
-                if (wy < height - 1) id = nameToId.Dirt;
-                else if (wy < height) id = nameToId[surfaceBlock] ?? 1;
+								if (depthFromTop === 1) {
+										id = nameToId[surfaceBlock] ?? 1;
+								} else if (depthFromTop <= 4) {
+										id = nameToId.Dirt;
+								} else {
+										id = nameToId.Stone;
+								}
               }
 
               blocks.push(id);
