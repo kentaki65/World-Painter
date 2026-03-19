@@ -83,8 +83,6 @@ function convertChunks(state) {
                 const height = state.map[wz][wx];
                 const surfaceBlock = state.blockMap[wz][wx];
 
-								console.log(height, surfaceBlock);
-
                 if (wy < height - 1) id = nameToId.Dirt;
                 else if (wy < height) id = nameToId[surfaceBlock] ?? 1;
               }else{
