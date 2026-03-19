@@ -86,8 +86,10 @@ export const mapInit = () =>
   );
 
 export const blockMapInit = () =>
-  Array.from({ length: state.heightLength }, () =>
-    new Array(state.widthLength).fill("Grass Block")
+  Array.from({ length: state.maxHeight }, () =>
+    Array.from({ length: state.heightLength }, () =>
+      new Array(state.widthLength).fill(4)
+    )
   );
 
 export const layerMapInit = () =>

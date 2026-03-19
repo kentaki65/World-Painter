@@ -3,6 +3,12 @@ import {
   cellSize, contour, DEFAULT_COLOR,
   blockColors, layerColors,
 } from "./state.js";
+import { getTopBlock } from "./utils.js";
+import { nameToId } from "./nameMap.js";
+
+const idToName = Object.fromEntries(
+  Object.entries(nameToId).map(([k,v]) => [v,k])
+);
 
 function drawBrushPreview(canvas){
   const ctx = canvas.getContext("2d");
@@ -55,7 +61,10 @@ export function draw(canvas){
     for (let x = startX; x < endX; x++) {
 
       const h = state.map[y][x];
-      const baseColor = blockColors[state.blockMap[y][x]] ?? DEFAULT_COLOR;
+      const blockId = getTopBlock(x, y);
+      const blockName = idToName[blockId];
+
+      const baseColor = !!blockColors[blockName] ? blockColors[blockName] : blockColors[blockId] ?? DEFAULT_COLOR;
 
       const isRange = x > 0 && y > 0 && x < state.widthLength-1 && y < state.heightLength-1;
 

@@ -12,6 +12,14 @@ export const lerp = (a, b, t) => {
   return a + (b - a) * t; 
 }
 
+export function getTopBlock(x, z) {
+  const height = Math.floor(state.map[z][x]);
+
+  if (height < 0 || height >= state.maxHeight) return 0;
+
+  return state.blockMap[height][z][x];
+}
+
 export function resizeMap(newChunkX, newChunkZ) {
   const newWidth = newChunkX * chunkSize;
   const newHeight = newChunkZ * chunkSize;
@@ -22,9 +30,13 @@ export function resizeMap(newChunkX, newChunkZ) {
     )
   );
 
-  const newBlockMap = Array.from({ length: newHeight }, (_, y) =>
-    Array.from({ length: newWidth }, (_, x) =>
-      (state.blockMap[y] && state.blockMap[y][x] !== undefined) ? state.blockMap[y][x] : "Grass Block"
+  const newBlockMap = Array.from({ length: state.maxHeight }, (_, y) =>
+    Array.from({ length: newHeight }, (_, z) =>
+      Array.from({ length: newWidth }, (_, x) =>
+        (state.blockMap[y] && state.blockMap[y][z] && state.blockMap[y][z][x] !== undefined)
+          ? state.blockMap[y][z][x]
+          : 0
+      )
     )
   );
 
@@ -40,51 +52,4 @@ export function resizeMap(newChunkX, newChunkZ) {
   state.map = newMap;
   state.blockMap = newBlockMap;
   state.layerMap = newLayerMap;
-}
-
-export function placeStructureAt(x, z, structure){
-  const baseY = state.map[z][x];
-
-  const sizeZ = structure.length;
-  const sizeY = structure[0].length;
-  const sizeX = structure[0][0].length;
-
-  const offsetX = Math.floor(sizeX / 2);
-  const offsetZ = Math.floor(sizeZ / 2);
-
-  for(let dz = 0; dz < sizeZ; dz++){
-    for(let dy = 0; dy < sizeY; dy++){
-      for(let dx = 0; dx < sizeX; dx++){
-
-        const id = structure[dz][dy][dx];
-        if(id === 0) continue; 
-
-        const wx = x + dx - offsetX;
-        const wy = baseY + dy;
-        const wz = z + dz - offsetZ;
-
-        if(
-          wx < 0 || wz < 0 ||
-          wx >= state.widthLength ||
-          wz >= state.heightLength ||
-          wy >= state.maxHeight
-        ) continue;
-
-        state.map[wz][wx] = Math.max(state.map[wz][wx], wy + 1);
-        state.blockMap[wz][wx] = id;
-      }
-    }
-  }
-}
-
-export function applyLayerStructures(){
-  for(let z = 0; z < state.heightLength; z++){
-    for(let x = 0; x < state.widthLength; x++){
-      if(state.layerMap[z][x] === "pineForest"){
-        if(Math.random() < 0.1){
-          placeStructureAt(x, z, structures.pine);
-        }
-      }
-    }
-  }
 }

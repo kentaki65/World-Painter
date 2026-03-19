@@ -111,18 +111,25 @@ function smoothBrush(cellX, cellY){
     }
   }
 }
+
 function sprayBrush(cellX, cellY){
   const density = state.brushRadius * 3;
+
   for(let i = 0; i < density; i++){
     const angle = Math.random() * Math.PI * 2;
     const radius = Math.sqrt(Math.random()) * state.brushRadius;
+
     const dx = Math.round(Math.cos(angle) * radius);
-    const dy = Math.round(Math.sin(angle) * radius);
+    const dz = Math.round(Math.sin(angle) * radius);
+
     const x = cellX + dx;
-    const y = cellY + dy;
-    if(x < 0 || y < 0 || x >= state.widthLength || y >= state.heightLength) continue;
+    const z = cellY + dz;
+
+    if(x < 0 || z < 0 || x >= state.widthLength || z >= state.heightLength) continue;
+
     if(state.leftDown){
-      state.blockMap[y][x] = state.selectedBlock;
+      const y = Math.floor(state.map[z][x]);
+      state.blockMap[y][z][x] = state.selectedBlock;
     }
   }
 }

@@ -1,7 +1,7 @@
 import avro from "https://esm.sh/avsc@5.7.9";
 import { Buffer } from "https://esm.sh/buffer";
 import { nameToId } from "./nameMap.js";
-import { state } from "./state.js";
+import { state, treesStructures } from "./state.js";
 
 const schema0 = avro.Type.forSchema({
 	type: "record",
@@ -34,101 +34,105 @@ const schema0 = avro.Type.forSchema({
 });
 
 function getMaxUsedHeight(state) {
-  let max = 0;
-  for (let z = 0; z < state.heightLength; z++) {
-    for (let x = 0; x < state.widthLength; x++) {
-      const h = state.map[z][x];
-      if (h > max) max = h;
-    }
-  }
-  return max;
+	let max = 0;
+	for (let z = 0; z < state.heightLength; z++) {
+		for (let x = 0; x < state.widthLength; x++) {
+			const h = state.map[z][x];
+			if (h > max) max = h;
+		}
+	}
+	return max;
 }
 
 function convertChunks(state) {
-  const chunks = [];
-  const chunkSize = 32;
+	const chunks = [];
+	const chunkSize = 32;
 
-  const chunkCountX = state.chunkLenX;
-  const chunkCountZ = state.chunkLenZ;
+	const chunkCountX = state.chunkLenX;
+	const chunkCountZ = state.chunkLenZ;
 
-  const maxUsedHeight = getMaxUsedHeight(state);
-  const chunkCountY = Math.ceil(maxUsedHeight / chunkSize);
+	const maxUsedHeight = getMaxUsedHeight(state);
+	const chunkCountY = Math.ceil(maxUsedHeight / chunkSize);
 
-  for (let cx = 0; cx < chunkCountX; cx++) {
-    for (let cy = 0; cy < chunkCountY; cy++) {
-      for (let cz = 0; cz < chunkCountZ; cz++) {
+	for (let cx = 0; cx < chunkCountX; cx++) {
+		for (let cy = 0; cy < chunkCountY; cy++) {
+			for (let cz = 0; cz < chunkCountZ; cz++) {
 
-        const blocks = [];
+				const blocks = [];
 
-        for (let x = 0; x < chunkSize; x++) {
-          for (let y = 0; y < chunkSize; y++) {
-            for (let z = 0; z < chunkSize; z++) {
+				for (let x = 0; x < chunkSize; x++) {
+					for (let y = 0; y < chunkSize; y++) {
+						for (let z = 0; z < chunkSize; z++) {
 
-              const wx = cx * chunkSize + x;
-              const wy = cy * chunkSize + y;
-              const wz = cz * chunkSize + z;
+							const wx = cx * chunkSize + x;
+							const wy = cy * chunkSize + y;
+							const wz = cz * chunkSize + z;
 
-              let id = 0;
+							let id = 0;
 
-              if (wx < state.widthLength && wz < state.heightLength && wy < state.maxHeight) {
-                const height = state.map[wz][wx];
-                const surfaceBlock = state.blockMap[wz][wx];
+							if (wx < state.widthLength && wz < state.heightLength && wy < state.maxHeight) {
+								const height = Math.floor(state.map[wz][wx]);
+								const surfaceBlock = state.blockMap[wy]?.[wz]?.[wx];
 								const depthFromTop = height - wy;
 
-								if (depthFromTop === 1) {
-										id = nameToId[surfaceBlock] ?? 1;
-								} else if (depthFromTop <= 4) {
-										id = nameToId.Dirt;
+								if (wy > height) {
+									id = 0;
 								} else {
+									if (depthFromTop === 0) {
+										id = !!nameToId[surfaceBlock] ? nameToId[surfaceBlock] : surfaceBlock ?? 1;
+									} else if (depthFromTop <= 3) {
+										id = nameToId.Dirt;
+									} else {
 										id = nameToId.Stone;
+									}
 								}
-              }
+							}
 
-              blocks.push(id);
-            }
-          }
-        }
+							blocks.push(id);
+						}
+					}
+				}
 
-        chunks.push({
-          x: cx,
-          y: cy,
-          z: cz,
-          blocks: blocks
-        });
+				chunks.push({
+					x: cx,
+					y: cy,
+					z: cz,
+					blocks: blocks
+				});
 
-      }
-    }
-  }
+			}
+		}
+	}
 
-  let minCX = Infinity, minCY = Infinity, minCZ = Infinity;
-  let maxCX = -Infinity, maxCY = -Infinity, maxCZ = -Infinity;
+	let minCX = Infinity, minCY = Infinity, minCZ = Infinity;
+	let maxCX = -Infinity, maxCY = -Infinity, maxCZ = -Infinity;
 
-  for (const c of chunks) {
-    if (c.x < minCX) minCX = c.x;
-    if (c.y < minCY) minCY = c.y;
-    if (c.z < minCZ) minCZ = c.z;
+	for (const c of chunks) {
+		if (c.x < minCX) minCX = c.x;
+		if (c.y < minCY) minCY = c.y;
+		if (c.z < minCZ) minCZ = c.z;
 
-    if (c.x > maxCX) maxCX = c.x;
-    if (c.y > maxCY) maxCY = c.y;
-    if (c.z > maxCZ) maxCZ = c.z;
-  }
+		if (c.x > maxCX) maxCX = c.x;
+		if (c.y > maxCY) maxCY = c.y;
+		if (c.z > maxCZ) maxCZ = c.z;
+	}
 
-  for (const c of chunks) {
-    c.x -= minCX;
-    c.y -= minCY;
-    c.z -= minCZ;
-  }
+	for (const c of chunks) {
+		c.x -= minCX;
+		c.y -= minCY;
+		c.z -= minCZ;
+	}
 
-  const sizeX = (maxCX - minCX + 1) * chunkSize;
-  const sizeY = (maxCY - minCY + 1) * chunkSize;
-  const sizeZ = (maxCZ - minCZ + 1) * chunkSize;
+	const sizeX = (maxCX - minCX + 1) * chunkSize;
+	const sizeY = (maxCY - minCY + 1) * chunkSize;
+	const sizeZ = (maxCZ - minCZ + 1) * chunkSize;
 
-  return {
-    name: "optimized",
-    pos: [0, 0, 0],
-    size: [sizeX, sizeY, sizeZ],
-    chunks: chunks
-  };
+	return {
+		name: "optimized",
+		pos: [0, 0, 0],
+		size: [sizeX, sizeY, sizeZ],
+		chunks: chunks
+	};
 }
 
 const splitBloxdschem = function (json) {
@@ -162,15 +166,15 @@ const splitBloxdschem = function (json) {
 }
 
 function downloadSchems(result) {
-  result.schems.forEach((bin, i) => {
-    const blob = new Blob([bin], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `schem_${i}.bloxdschem`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
+	result.schems.forEach((bin, i) => {
+		const blob = new Blob([bin], { type: "application/octet-stream" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `schem_${i}.bloxdschem`;
+		a.click();
+		URL.revokeObjectURL(url);
+	});
 }
 
 const write = function (json) {
