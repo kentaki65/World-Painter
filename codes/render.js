@@ -1,6 +1,6 @@
 import {
   state,
-  cellSize, widthLength, heightLength, maxHeight, contour, DEFAULT_COLOR,
+  cellSize, contour, DEFAULT_COLOR,
   blockColors, layerColors,
 } from "./state.js";
 
@@ -40,6 +40,25 @@ function drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY) {
   }
 }
 
+function drawSplitLines(ctx, canvas, state) {
+  const chunk = 32;
+  const size = cellSize * state.zoom;
+  const totalChunksX = state.widthLength;
+  const zySize = Math.ceil(state.heightLength / chunk) * Math.ceil(state.widthLength / chunk);
+  const sliceSize = Math.floor(200 / zySize);
+
+  for (let x = sliceSize * chunk; x < totalChunksX; x += sliceSize * chunk) {
+    const px = x * size + state.camX;
+
+    ctx.beginPath();
+    ctx.moveTo(px, 0);
+    ctx.lineTo(px, canvas.height);
+    ctx.strokeStyle = "rgba(255,0,0,0.5)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
 export function draw(canvas){
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -48,8 +67,8 @@ export function draw(canvas){
 
   const startX = Math.max(0, Math.floor(-state.camX / size));
   const startY = Math.max(0, Math.floor(-state.camY / size));
-  const endX = Math.min(widthLength, Math.ceil((canvas.width - state.camX) / size));
-  const endY = Math.min(heightLength, Math.ceil((canvas.height - state.camY) / size));
+  const endX = Math.min(state.widthLength, Math.ceil((canvas.width - state.camX) / size));
+  const endY = Math.min(state.heightLength, Math.ceil((canvas.height - state.camY) / size));
 
   for (let y = startY; y < endY; y++) {
     for (let x = startX; x < endX; x++) {
@@ -57,7 +76,7 @@ export function draw(canvas){
       const h = state.map[y][x];
       const baseColor = blockColors[state.blockMap[y][x]] ?? DEFAULT_COLOR;
 
-      const isRange = x > 0 && y > 0 && x < widthLength-1 && y < heightLength-1;
+      const isRange = x > 0 && y > 0 && x < state.widthLength-1 && y < state.heightLength-1;
 
       const diffWidth = isRange ? state.map[y][x-1] - state.map[y][x+1] : 0;
       const diffHeight = isRange ? state.map[y-1][x] - state.map[y+1][x] : 0;
@@ -86,7 +105,7 @@ export function draw(canvas){
 
       const level = (h / contour) | 0;
 
-      if (x < widthLength - 1) {
+      if (x < state.widthLength - 1) {
         const rightLevel = (state.map[y][x+1] / contour) | 0;
         if (level !== rightLevel) {
           ctx.beginPath();
@@ -97,7 +116,7 @@ export function draw(canvas){
         }
       }
 
-      if (y < heightLength - 1) {
+      if (y < state.heightLength - 1) {
         const downLevel = (state.map[y+1][x] / contour) | 0;
         if (level !== downLevel) {
           ctx.beginPath();
@@ -111,5 +130,6 @@ export function draw(canvas){
   }
 
   drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY);
+  drawSplitLines(ctx, canvas, state);
   drawBrushPreview(canvas);
 }

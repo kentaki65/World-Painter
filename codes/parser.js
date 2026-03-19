@@ -1,15 +1,7 @@
-//Read and write .bloxdschem files, mainly using avsc
 import avro from "https://esm.sh/avsc@5.7.9";
 import { Buffer } from "https://esm.sh/buffer";
-
-import {
-	state,
-	cellSize, widthLength, heightLength, maxHeight, contour, DEFAULT_COLOR,
-	blockColors, layerColors, mapInit, blockMapInit, layerMapInit,
-	chunkLenX, chunkLenZ
-} from "./state.js";
-
 import { nameToId } from "./nameMap.js";
+import { state } from "./state.js";
 
 const schema0 = avro.Type.forSchema({
 	type: "record",
@@ -43,8 +35,8 @@ const schema0 = avro.Type.forSchema({
 
 function getMaxUsedHeight(state) {
   let max = 0;
-  for (let z = 0; z < heightLength; z++) {
-    for (let x = 0; x < widthLength; x++) {
+  for (let z = 0; z < state.heightLength; z++) {
+    for (let x = 0; x < state.widthLength; x++) {
       const h = state.map[z][x];
       if (h > max) max = h;
     }
@@ -56,8 +48,8 @@ function convertChunks(state) {
   const chunks = [];
   const chunkSize = 32;
 
-  const chunkCountX = chunkLenX;
-  const chunkCountZ = chunkLenZ;
+  const chunkCountX = state.chunkLenX;
+  const chunkCountZ = state.chunkLenZ;
 
   const maxUsedHeight = getMaxUsedHeight(state);
   const chunkCountY = Math.ceil(maxUsedHeight / chunkSize);
@@ -67,7 +59,6 @@ function convertChunks(state) {
       for (let cz = 0; cz < chunkCountZ; cz++) {
 
         const blocks = [];
-        let isEmpty = true;
 
         for (let x = 0; x < chunkSize; x++) {
           for (let y = 0; y < chunkSize; y++) {
@@ -79,40 +70,28 @@ function convertChunks(state) {
 
               let id = 0;
 
-              if (wx < widthLength && wz < heightLength && wy < maxHeight) {
+              if (wx < state.widthLength && wz < state.heightLength && wy < state.maxHeight) {
                 const height = state.map[wz][wx];
                 const surfaceBlock = state.blockMap[wz][wx];
 
                 if (wy < height - 1) id = nameToId.Dirt;
                 else if (wy < height) id = nameToId[surfaceBlock] ?? 1;
-              }else{
-								console.log(wx, widthLength, wz, heightLength, wy, maxHeight)
-							}
+              }
 
-              if (id !== 0) isEmpty = false;
               blocks.push(id);
             }
           }
         }
-        if (!isEmpty) {
-          chunks.push({
-            x: cx,
-            y: cy,
-            z: cz,
-            blocks: blocks
-          });
-        }
+
+        chunks.push({
+          x: cx,
+          y: cy,
+          z: cz,
+          blocks: blocks
+        });
+
       }
     }
-  }
-
-  if (chunks.length === 0) {
-    return {
-      name: "empty",
-      pos: [0, 0, 0],
-      size: [32, 32, 32],
-      chunks: []
-    };
   }
 
   let minCX = Infinity, minCY = Infinity, minCZ = Infinity;

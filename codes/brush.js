@@ -1,7 +1,4 @@
-import {
-  state,
-  cellSize, widthLength, heightLength, maxHeight,
-} from "./state.js";
+import { state, cellSize } from "./state.js";
 import { heightClamp, lerp } from "./utils.js";
 
 let kernelCache = null;
@@ -12,7 +9,7 @@ function normalBrush(cellX, cellY){
     for(let dx = -state.brushRadius; dx <= state.brushRadius; dx++){
       const x = cellX + dx;
       const y = cellY + dy;
-      if(x < 0 || y < 0 || x >= widthLength || y >= heightLength) continue;
+      if(x < 0 || y < 0 || x >= state.widthLength || y >= state.heightLength) continue;
 
       const distance = Math.hypot(dx, dy);
       if(distance <= state.brushRadius){
@@ -73,9 +70,9 @@ function smoothBrush(cellX, cellY){
   const kernel = getKernel(r);
 
   const minX = Math.max(0, cellX - r);
-  const maxX = Math.min(widthLength - 1, cellX + r);
+  const maxX = Math.min(state.widthLength - 1, cellX + r);
   const minY = Math.max(0, cellY - r);
-  const maxY = Math.min(heightLength - 1, cellY + r);
+  const maxY = Math.min(state.heightLength - 1, cellY + r);
 
   const copy = [];
   for(let y = minY; y <= maxY; y++){
@@ -86,7 +83,7 @@ function smoothBrush(cellX, cellY){
     for(let dx = -r; dx <= r; dx++){
       const x = cellX + dx;
       const y = cellY + dy;
-      if(x < 0 || x >= widthLength || y < 0 || y >= heightLength) continue;
+      if(x < 0 || x >= state.widthLength || y < 0 || y >= state.heightLength) continue;
       const d2 = dx*dx + dy*dy;
       if(d2 > r*r) continue;
       let sum = 0;
@@ -123,7 +120,7 @@ function sprayBrush(cellX, cellY){
     const dy = Math.round(Math.sin(angle) * radius);
     const x = cellX + dx;
     const y = cellY + dy;
-    if(x < 0 || y < 0 || x >= widthLength || y >= heightLength) continue;
+    if(x < 0 || y < 0 || x >= state.widthLength || y >= state.heightLength) continue;
     if(state.leftDown){
       state.blockMap[y][x] = state.selectedBlock;
     }
@@ -139,7 +136,7 @@ function layerBrush(cellX, cellY){
     const dy = Math.round(Math.sin(angle)*radius);
     const x = cellX + dx;
     const y = cellY + dy;
-    if(x<0 || y<0 || x>=widthLength || y>=heightLength) continue;
+    if(x<0 || y<0 || x>=state.widthLength || y>=state.heightLength) continue;
     if(state.leftDown){
       layerMap[y][x] = selectedLayer;
     }
@@ -156,12 +153,12 @@ export function brush(e){
   const size = cellSize * state.zoom;
   const cellX = Math.floor((e.offsetX - state.camX) / size);
   const cellY = Math.floor((e.offsetY - state.camY) / size);
-  if(cellX < 0 || cellY < 0 || cellX >= widthLength || cellY >= heightLength) return;
+  if(cellX < 0 || cellY < 0 || cellX >= state.widthLength || cellY >= state.heightLength) return;
 
   const locationBar = document.getElementById("location");
   const heightBar = document.getElementById("heightchild");
   locationBar.textContent = `Location: ${cellX}, ${cellY}`;
-  heightBar.textContent = `Height: ${Math.floor(state.map[cellY][cellX])}/${maxHeight}`;
+  heightBar.textContent = `Height: ${Math.floor(state.map[cellY][cellX])}/${state.maxHeight}`;
 
   if(!state.leftDown && !state.rightDown) return;
   if(state.mode === "smooth"){

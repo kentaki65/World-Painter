@@ -1,11 +1,6 @@
-const chunkSize = 32;
-export const chunkLenX = 2;
-export const chunkLenZ = 2;
-
+export const chunkSize = 32;
 export const cellSize = 10;
-export const widthLength = chunkSize*chunkLenX;
-export const heightLength = chunkSize*chunkLenZ;
-export const maxHeight = 64;
+
 export const contour = 5;
 export const DEFAULT_COLOR = [255,0,255];
 
@@ -29,36 +24,55 @@ export const layerColors = {
   deliciousForest: [40,110,50]
 };
 
-export const mapInit = () =>
-  Array.from({ length: heightLength }, () => new Array(widthLength).fill(0));
-
-export const blockMapInit = () =>
-  Array.from({ length: heightLength }, () => new Array(widthLength).fill("Grass Block"));
-
-export const layerMapInit = () =>
-  Array.from({ length: heightLength }, () => Array(widthLength).fill(null));
-
 export const state = {
-  map: mapInit(),
-  blockMap: blockMapInit(),
-  layerMap: layerMapInit(),
+  // サイズ系
+  chunkLenX: 4,
+  chunkLenZ: 4,
+  get widthLength() { return this.chunkLenX * chunkSize; },
+  get heightLength() { return this.chunkLenZ * chunkSize; },
+  maxHeight: 64,
 
+  //マップ
+  map: null,
+  blockMap: null,
+  layerMap: null,
+  fileName: "schem",
+
+  // 編集系
   leftDown: false,
   rightDown: false,
   brushRadius: 3,
-
   mouseX: 0,
   mouseY: 0,
-
   camX: 0,
   camY: 0,
   zoom: 1,
   panning: false,
   panStartX: 0,
   panStartY: 0,
-
   mode: "height",
   targetHeight: null,
   selectedBlock: "stone",
   selectedLayer: "frost"
 };
+
+export const mapInit = () =>
+  Array.from({ length: state.heightLength }, () =>
+    new Array(state.widthLength).fill(0)
+  );
+
+export const blockMapInit = () =>
+  Array.from({ length: state.heightLength }, () =>
+    new Array(state.widthLength).fill("Grass Block")
+  );
+
+export const layerMapInit = () =>
+  Array.from({ length: state.heightLength }, () =>
+    new Array(state.widthLength).fill(null)
+  );
+
+export function initMaps() {
+  state.map = mapInit();
+  state.blockMap = blockMapInit();
+  state.layerMap = layerMapInit();
+}

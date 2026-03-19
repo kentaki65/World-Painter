@@ -18,7 +18,6 @@
         <div class="nameLabel">file</div>
         <div class="dropdownMenu">
           <button type="button" class="dropdownButton" id="newFile">new palette</button>
-          <input type="file" id="fileInput" style="display:none">
           <button type="button" class="attached" id="openFile">open file</button>
           <input type="file" id="exportInput" style="display:none">
           <button type="button" class="attached" id="exportFile">export file</button>
@@ -107,6 +106,28 @@
             <img src="blocksIcon/Snow.png" width="24">
           </button>
         </div>
+        <div class="sliders">
+          <div class="labels">settings/placeholder</div>
+          <label for="fileName">fileName</label>
+          <input type="text" id="volume" name="fileName" placeholder="File name"/>
+          <label>
+            paletteSize: <input type="number" id="paletteSize" value="4" min="1">
+          </label>
+          <label>
+            maxHeight: <input type="number" id="maxHeight" value="64" min="32">
+          </label>
+        </div>
+        <div class="advancedSettings">
+          <div class="labels">Advanced settings/placeholder</div>
+          <label for="defaultBlock">defaultBlock</label>
+          <select name="block" id="defaultBlock">
+            <option value="">--Please select one--</option>
+            <option value="grass_block">Grass_Block</option>
+            <option value="dirt">Dirt</option>
+            <option value="sand">Sand</option>
+            <option value="Snow">Snow</option>
+          </select>
+        </div>
       </div>
       <canvas id="canvas"></canvas>
     </div>
@@ -118,7 +139,6 @@
       <div class="child" id="mode">Mode: height</div>
       <div class="child" id="layer">Layer: none</div>
       <div class="child" id="selectBlock">Block: stone</div>
-      <progress id="progressBar" value="0" max="100"></progress>
     </div>
   </div>
 </body>
