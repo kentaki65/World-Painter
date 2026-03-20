@@ -3,7 +3,6 @@ import {
   cellSize, contour, DEFAULT_COLOR,
   blockColors, layerColors,
 } from "./state.js";
-import { getTopBlock } from "./utils.js";
 import { nameToId } from "./nameMap.js";
 
 const idToName = Object.fromEntries(
@@ -46,6 +45,29 @@ function drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY) {
   }
 }
 
+export function updateBlockMap() {
+  const newMap = Array.from({ length: state.maxHeight }, () =>
+    Array.from({ length: state.heightLength }, () =>
+      new Array(state.widthLength).fill(0)
+    )
+  );
+
+  for (let z = 0; z < state.heightLength; z++) {
+    for (let x = 0; x < state.widthLength; x++) {
+      const h = Math.floor(state.map[z][x]);
+      for (let y = 0; y <= h && y < state.maxHeight; y++) {
+        if (state.blockMap[y][z][x] === 0) {
+          newMap[y][z][x] = 4;
+        } else {
+          newMap[y][z][x] = state.blockMap[y][z][x];
+        }
+      }
+    }
+  }
+
+  state.blockMap = newMap;
+}
+
 export function draw(canvas){
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -61,17 +83,23 @@ export function draw(canvas){
     for (let x = startX; x < endX; x++) {
 
       const h = state.map[y][x];
-      const blockId = getTopBlock(x, y);
-      const blockName = idToName[blockId];
-
-      const baseColor = !!blockColors[blockName] ? blockColors[blockName] : blockColors[blockId] ?? DEFAULT_COLOR;
+      const blockY = Math.min(Math.floor(h), state.maxHeight - 1);
+      const blockId = state.blockMap[blockY]?.[y]?.[x] ?? 0;
+      const blockName = idToName[blockId] ?? "Air";
+      const baseColor = blockColors[blockName] ?? DEFAULT_COLOR;
 
       const isRange = x > 0 && y > 0 && x < state.widthLength-1 && y < state.heightLength-1;
 
       const diffWidth = isRange ? state.map[y][x-1] - state.map[y][x+1] : 0;
       const diffHeight = isRange ? state.map[y-1][x] - state.map[y+1][x] : 0;
 
-      const brightness = 1 + (-(diffWidth + diffHeight)) * 0.02;
+      let delta = diffWidth + diffHeight;
+      if(state.leftDown || state.rightDown){
+        delta = Math.max(-5, Math.min(5, delta));
+      }
+
+      let brightness = 1 - delta * 0.01;
+      brightness = Math.max(0.3, Math.min(1.3, brightness));
 
       const r = baseColor[0] * brightness | 0;
       const g = baseColor[1] * brightness | 0;
@@ -125,4 +153,5 @@ export function draw(canvas){
 
   drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY);
   drawBrushPreview(canvas);
+  //updateBlockMap();
 }

@@ -44,95 +44,137 @@ function getMaxUsedHeight(state) {
 	return max;
 }
 
+export function growForest(state, pine, spacing = 8){
+  const width = state.widthLength;
+  const height = state.heightLength;
+
+  const patternHeight = pine.length;     
+  const patternDepth = pine[0].length;   
+  const patternWidth = pine[0][0].length;
+
+  const centerPX = Math.floor(patternWidth / 2);
+  const centerPZ = Math.floor(patternDepth / 2);
+
+  for(let z = 0; z < height; z += spacing){
+    for(let x = 0; x < width; x += spacing){
+      const nx = x + Math.floor(Math.random() * (spacing/2)) - Math.floor(spacing/4) - 1;
+      const nz = z + Math.floor(Math.random() * (spacing/2)) - Math.floor(spacing/4) - 1;
+
+      if(nx < 0 || nz < 0 || nx + patternWidth > width || nz + patternDepth > height) continue;
+
+      const cx = nx + centerPX;
+      const cz = nz + centerPZ;
+
+      if(!state.layerMap[cz][cx] || state.layerMap[cz][cx] !== state.selectedLayer) continue;
+
+      let centerYTop = -1;
+      for(let y = state.maxHeight - 1; y >= 0; y--){
+        if(state.blockMap[y][cz][cx] !== 0){
+          centerYTop = y;
+          break;
+        }
+      }
+      const surfaceHeight = Math.floor(state.map[cz][cx] || 0);
+      const yStart = Math.max(surfaceHeight, centerYTop + 1);
+
+      for(let py = 0; py < patternHeight; py++){    
+        for(let pz = 0; pz < patternDepth; pz++){   
+          for(let px = 0; px < patternWidth; px++){ 
+            const blockId = pine[py][pz][px];
+            if(blockId === 0) continue;
+
+            const wx = nx + px;    
+            const wz = nz + py;    
+            const wy = yStart + pz;
+
+            if(wx < 0 || wz < 0 || wx >= width || wz >= height || wy >= state.maxHeight) continue;
+            if(!state.layerMap[wz][wx] || state.layerMap[wz][wx] !== state.selectedLayer) continue;
+            state.blockMap[wy][wz][wx] = blockId;
+          }
+        }
+      }
+    }
+  }
+}
+
 function convertChunks(state) {
-	const chunks = [];
-	const chunkSize = 32;
+  const chunks = [];
+  const chunkSize = 32;
+  const chunkCountX = state.chunkLenX;
+  const chunkCountZ = state.chunkLenZ;
+  const maxUsedHeight = getMaxUsedHeight(state);
+  const chunkCountY = Math.ceil(maxUsedHeight / chunkSize);
 
-	const chunkCountX = state.chunkLenX;
-	const chunkCountZ = state.chunkLenZ;
+  for (let cx = 0; cx < chunkCountX; cx++) {
+    for (let cy = 0; cy < chunkCountY; cy++) {
+      for (let cz = 0; cz < chunkCountZ; cz++) {
+        const blocks = [];
+        for (let x = 0; x < chunkSize; x++) {
+          for (let y = 0; y < chunkSize; y++) {
+            for (let z = 0; z < chunkSize; z++) {
+              const wx = cx * chunkSize + x;
+              const wy = cy * chunkSize + y;
+              const wz = cz * chunkSize + z;
+              let id = 0;
 
-	const maxUsedHeight = getMaxUsedHeight(state);
-	const chunkCountY = Math.ceil(maxUsedHeight / chunkSize);
+              if (wx < state.widthLength && wz < state.heightLength && wy < state.maxHeight) {
+                const surfaceBlock = state.blockMap[wy]?.[wz]?.[wx];
 
-	for (let cx = 0; cx < chunkCountX; cx++) {
-		for (let cy = 0; cy < chunkCountY; cy++) {
-			for (let cz = 0; cz < chunkCountZ; cz++) {
+                if (surfaceBlock && surfaceBlock !== 0) {
+                  id = surfaceBlock;
+                } else {
+                  const height = Math.floor(state.map[wz][wx]);
+                  const depthFromTop = height - wy;
 
-				const blocks = [];
+                  if (wy > height) {
+                    id = 0; // 空気
+                  } else if (depthFromTop === 0) {
+                    id = 1; // 草ブロック
+                  } else if (depthFromTop <= 3) {
+                    id = nameToId.Dirt;
+                  } else {
+                    id = nameToId.Stone;
+                  }
+                }
+              }
 
-				for (let x = 0; x < chunkSize; x++) {
-					for (let y = 0; y < chunkSize; y++) {
-						for (let z = 0; z < chunkSize; z++) {
+              blocks.push(id);
+            }
+          }
+        }
+        chunks.push({ x: cx, y: cy, z: cz, blocks });
+      }
+    }
+  }
 
-							const wx = cx * chunkSize + x;
-							const wy = cy * chunkSize + y;
-							const wz = cz * chunkSize + z;
+  let minCX = Infinity, minCY = Infinity, minCZ = Infinity;
+  let maxCX = -Infinity, maxCY = -Infinity, maxCZ = -Infinity;
 
-							let id = 0;
+  for (const c of chunks) {
+    if (c.x < minCX) minCX = c.x;
+    if (c.y < minCY) minCY = c.y;
+    if (c.z < minCZ) minCZ = c.z;
+    if (c.x > maxCX) maxCX = c.x;
+    if (c.y > maxCY) maxCY = c.y;
+    if (c.z > maxCZ) maxCZ = c.z;
+  }
 
-							if (wx < state.widthLength && wz < state.heightLength && wy < state.maxHeight) {
-								const height = Math.floor(state.map[wz][wx]);
-								const surfaceBlock = state.blockMap[wy]?.[wz]?.[wx];
-								const depthFromTop = height - wy;
+  for (const c of chunks) {
+    c.x -= minCX;
+    c.y -= minCY;
+    c.z -= minCZ;
+  }
 
-								if (wy > height) {
-									id = 0;
-								} else {
-									if (depthFromTop === 0) {
-										id = !!nameToId[surfaceBlock] ? nameToId[surfaceBlock] : surfaceBlock ?? 1;
-									} else if (depthFromTop <= 3) {
-										id = nameToId.Dirt;
-									} else {
-										id = nameToId.Stone;
-									}
-								}
-							}
+  const sizeX = (maxCX - minCX + 1) * chunkSize;
+  const sizeY = (maxCY - minCY + 1) * chunkSize;
+  const sizeZ = (maxCZ - minCZ + 1) * chunkSize;
 
-							blocks.push(id);
-						}
-					}
-				}
-
-				chunks.push({
-					x: cx,
-					y: cy,
-					z: cz,
-					blocks: blocks
-				});
-
-			}
-		}
-	}
-
-	let minCX = Infinity, minCY = Infinity, minCZ = Infinity;
-	let maxCX = -Infinity, maxCY = -Infinity, maxCZ = -Infinity;
-
-	for (const c of chunks) {
-		if (c.x < minCX) minCX = c.x;
-		if (c.y < minCY) minCY = c.y;
-		if (c.z < minCZ) minCZ = c.z;
-
-		if (c.x > maxCX) maxCX = c.x;
-		if (c.y > maxCY) maxCY = c.y;
-		if (c.z > maxCZ) maxCZ = c.z;
-	}
-
-	for (const c of chunks) {
-		c.x -= minCX;
-		c.y -= minCY;
-		c.z -= minCZ;
-	}
-
-	const sizeX = (maxCX - minCX + 1) * chunkSize;
-	const sizeY = (maxCY - minCY + 1) * chunkSize;
-	const sizeZ = (maxCZ - minCZ + 1) * chunkSize;
-
-	return {
-		name: "optimized",
-		pos: [0, 0, 0],
-		size: [sizeX, sizeY, sizeZ],
-		chunks: chunks
-	};
+  return {
+    name: "optimized",
+    pos: [0, 0, 0],
+    size: [sizeX, sizeY, sizeZ],
+    chunks
+  };
 }
 
 const splitBloxdschem = function (json) {

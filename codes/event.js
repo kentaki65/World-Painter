@@ -5,10 +5,11 @@ import {
   mapInit,
   blockMapInit,
   layerMapInit,
+  treesStructures
 } from "./state.js";
 
 import { brush } from "./brush.js";
-import { writeBloxdSchem, downloadSchems, convertChunks } from "./parser.js";
+import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
 import { resizeMap } from "./utils.js";
 
 const canvas = document.getElementById("canvas");
@@ -96,7 +97,7 @@ export function eventInit() {
 
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
-  ["height", "flatten", "sprayPaint", "smooth", "layerPaint"].forEach(id => {
+  ["height", "flatten", "sprayPaint", "smooth", "layerPaint", "fillWithWater", "Sponge"].forEach(id => {
     document.getElementById(id).addEventListener("click", changeMode);
   });
 
@@ -122,6 +123,7 @@ export function eventInit() {
   });
 
   exportInput.addEventListener("click", () => {
+    growForest(state, treesStructures.pine, 6); 
     const json = convertChunks(state);
     const result = writeBloxdSchem(json);
     downloadSchems(result);
@@ -140,9 +142,8 @@ export function eventInit() {
   
   maxHeightInput.addEventListener("input", (e) => {
     const value = parseInt(e.target.value) || 64;
-    paletteSettings.maxHeight = value;
     state.maxHeight = value;
-    console.log("maxHeight:", paletteSettings.maxHeight);
+    console.log("maxHeight:", state.maxHeight);
   });
 
   /*defaultBlockSelect.addEventListener("change", (e) => {
