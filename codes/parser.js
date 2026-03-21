@@ -170,7 +170,7 @@ function convertChunks(state) {
   const sizeZ = (maxCZ - minCZ + 1) * chunkSize;
 
   return {
-    name: "optimized",
+    name: state.fileName || "schem",
     pos: [0, 0, 0],
     size: [sizeX, sizeY, sizeZ],
     chunks
@@ -178,42 +178,72 @@ function convertChunks(state) {
 }
 
 const splitBloxdschem = function (json) {
-	const schems = [];
-	const zySize = Math.ceil(json.sizeY / 32) * Math.ceil(json.sizeZ / 32);
-	const sliceSize = Math.floor(200 / zySize);
-	let currOffset = 0;
-	while (true) {
-		const chunksSlice = json.chunks.splice(0, zySize * sliceSize);
-		if (!chunksSlice.length) break;
+  const schems = [];
+  const zySize = Math.ceil(json.sizeY / 32) * Math.ceil(json.sizeZ / 32);
+  const sliceSize = Math.floor(200 / zySize);
 
-		chunksSlice.map(chunk => chunk.x -= currOffset);
+  let currOffset = 0;
 
-		schems.push({
-			name: json.name,
-			x: 0,
-			y: 0,
-			z: 0,
-			//maybe shorter for final?
-			sizeX: Math.min(json.sizeX, sliceSize * 32),
-			sizeY: json.sizeY,
-			sizeZ: json.sizeZ,
-			chunks: chunksSlice
-		})
-		currOffset += sliceSize;
-	}
-	return {
-		schems: schems,
-		sliceSize: sliceSize
-	};
-}
+  while (true) {
+    const expectedCount = zySize * sliceSize;
+    const chunksSlice = json.chunks.splice(0, expectedCount);
+    if (!chunksSlice.length) break;
 
+    const chunkMap = new Map();
+    for (const c of chunksSlice) {
+      chunkMap.set(`${c.x},${c.y},${c.z}`, c);
+    }
+
+    const filledChunks = [];
+
+    for (let x = currOffset; x < currOffset + sliceSize; x++) {
+      for (let y = 0; y < Math.ceil(json.sizeY / 32); y++) {
+        for (let z = 0; z < Math.ceil(json.sizeZ / 32); z++) {
+
+          const key = `${x},${y},${z}`;
+          let chunk = chunkMap.get(key);
+
+          if (!chunk) {
+            chunk = {
+              x: x,
+              y: y,
+              z: z,
+              blocks: new Array(32*32*32).fill(0)
+            };
+          }
+
+          chunk.x -= currOffset;
+          filledChunks.push(chunk);
+        }
+      }
+    }
+
+    schems.push({
+      name: json.name,
+      x: 0,
+      y: 0,
+      z: 0,
+      sizeX: sliceSize * 32,
+      sizeY: json.sizeY,
+      sizeZ: json.sizeZ,
+      chunks: filledChunks
+    });
+
+    currOffset += sliceSize;
+  }
+
+  return {
+    schems,
+    sliceSize
+  };
+};
 function downloadSchems(result) {
 	result.schems.forEach((bin, i) => {
 		const blob = new Blob([bin], { type: "application/octet-stream" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = `schem_${i}.bloxdschem`;
+		a.download = `${state.fileName || "schem"}${i}.bloxdschem`;
 		a.click();
 		URL.revokeObjectURL(url);
 	});

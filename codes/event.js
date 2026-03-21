@@ -57,6 +57,7 @@ const brushBar = document.getElementById("brushType");
 
 const newFileInput = document.getElementById("newFile");
 const exportInput = document.getElementById("exportFile");
+const open3dView = document.getElementById("open3dview");
 
 const fileNameInput = document.getElementById("volume");
 const paletteSizeInput = document.getElementById("paletteSize");
@@ -311,5 +312,76 @@ export function eventInit() {
   restoreDefault.addEventListener("click", (e) => {
     brushBar.textContent = `Brush: default`;
     brushState.brushType = "default";
+  });
+
+  open3dView.addEventListener("click", (e) => {
+    const win = window.open("", "_blank", "width=800,height=600");
+    win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>body{margin:0;overflow:hidden;}</style>
+    </head>
+    <body>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script>
+    const scene = new THREE.Scene();
+
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const map = ${JSON.stringify(state.map)};
+    const blockMap = ${JSON.stringify(state.blockMap)};
+
+    const sizeX = map[0].length;
+    const sizeZ = map.length;
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+    const centerX = sizeX / 2;
+    const centerZ = sizeZ / 2;
+    const maxH = ${state.maxHeight};
+
+    const dist = Math.max(sizeX, sizeZ) * 1.5;
+    camera.position.set(centerX, maxH + dist, centerZ + dist);
+    camera.lookAt(centerX, 0, centerZ);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const light = new THREE.DirectionalLight(0xffffff, 0.8);
+    light.position.set(50,100,50);
+    scene.add(light);
+
+    const geometry = new THREE.BoxGeometry(1,1,1);
+
+    function getColor(id){
+      switch(id){
+        case 1: return 0x00aa00;
+        case 2: return 0x8B4513;
+        case 3: return 0x888888;
+        default: return 0xffffff;
+      }
+    }
+
+    for(let z=0; z<map.length; z++){
+      for(let x=0; x<map[0].length; x++){
+        const h = Math.floor(map[z][x]);
+
+        let id = blockMap[h]?.[z]?.[x] ?? 0;
+        if(id === 0) id = 1;
+
+        const material = new THREE.MeshLambertMaterial({ color: getColor(id) });
+        const cube = new THREE.Mesh(geometry, material);
+
+        cube.position.set(x, h, z);
+        scene.add(cube);
+      }
+    }
+
+    renderer.render(scene, camera);
+    </script>
+    </body>
+    </html>
+    `);
   })
 }
