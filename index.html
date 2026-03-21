@@ -117,21 +117,54 @@
             Water level Height: <input type="number" id="waterLevelHeight" value="0" min="0">
           </label>
         </div>
-        <div class="advancedSettings">
-          <div class="labels">Advanced settings</div>
-          <label for="defaultBlock">defaultBlock</label>
-          <select name="block" id="defaultBlock">
-            <option value="">--Please select one--</option>
-            <option value="grass_block">Grass_Block</option>
-            <option value="dirt">Dirt</option>
-            <option value="sand">Sand</option>
-            <option value="Snow">Snow</option>
-          </select>
-        </div>
       </div>
       <canvas id="canvas"></canvas>
-      <div class="toolsColumn" id="brushSetting">
-        <div class="labels">brush settings</div>
+      <div class="toolsColumn" id="brushes">
+        <div class="labels">brushes</div>
+          <div class="brushUI" id="brushUI">
+            <button class="defaultBrush" title="dirt" id="restoreDefault">
+              Restore default
+            </button>
+          </div>
+          <div class="labels">options</div>
+          <div class="settingWrapper">
+            <div class="setting-group">
+              <label>
+                <input type="checkbox" id="atOrAboveEnabled">
+                at or above:
+              </label>
+              <input type="number" id="orAboveRangeInput" min="0" max="255" value="0">
+            </div>
+
+            <div class="setting-group">
+              <label>
+                <input type="checkbox" id="atOrBelowEnabled">
+                at or below:
+              </label>
+              <input type="number" id="atOrBelowRangeInput" min="0" max="255" value="0">
+            </div>
+
+            <div class="setting-group">
+              <label>
+                <input type="checkbox" id="onlyBlockEnabled">
+                only on:
+              </label>
+              <input type="text" id="onlyBlockInput" placeholder="Dirt">
+            </div>
+
+            <div class="setting-group">
+              <label>
+                <input type="checkbox" id="angleLimitAbove">
+                above
+              </label>
+              <label>
+                <input type="checkbox" id="angleLimitBelow">
+                below
+              </label>
+              <input type="number" id="orAngleRangeInput" min="0" max="255" value="0">
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="underbar" id="underbar">
@@ -141,7 +174,9 @@
       <div class="child" id="zoom">Zoom: </div>
       <div class="child" id="mode">Mode: height</div>
       <div class="child" id="layer">Layer: none</div>
+      <div class="child" id="brushType">Brush: default</div>
       <div class="child" id="selectBlock">Block: stone</div>
+      <div class="child" id="degrees">Degrees: 0°</div>
     </div>
   </div>
 </body>

@@ -1,5 +1,6 @@
 import {
   state,
+  brushState,
   cellSize,
   blockColors,
   mapInit,
@@ -11,6 +12,40 @@ import {
 import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
 import { resizeMap, resizeHeight } from "./utils.js";
 
+const brushImages = [
+  "Circle Mountain 2.png",
+  "Circle Mountain 3.png",
+  "Circle Mountain 4.png",
+  "Circle Mountain 5.png",
+  "Cliff Mountain 1.png",
+  "Cliff Mountain 2.png",
+  "Cliff Mountain 3.png",
+  "Cliff Mountain 4.png",
+  "Desert Mountain 1.png",
+  "Desert Mountain 2.png",
+  "Desert Mountain 3.png",
+  "Desert Mountain 4.png",
+  "Desert Mountain 6.png",
+  "Mountain 1.png",
+  "Mountain 2.png",
+  "Mountain 3.png",
+  "Mountain 4.png",
+  "Plateau 1.png",
+  "Plateau 2.png",
+  "Plateau 3.png",
+  "Plateau 4.png",
+  "Snow Mountain 1.png",
+  "Snow Mountain 2.png",
+  "Snow Mountain 3.png",
+  "Snow Mountain 4.png",
+  "Snow Mountain 5.png",
+  "Terraced Mountain 2.png",
+  "Terraced Mountain 3.png",
+  "Terraced Mountain 4.png",
+  "Terraced Mountain 6.png",
+  "Terraced Mountain 7.png"
+]
+
 const canvas = document.getElementById("canvas");
 
 const brushSizeBar = document.getElementById("brushSize");
@@ -18,6 +53,7 @@ const zoomSizeBar = document.getElementById("zoom");
 const modeBar = document.getElementById("mode");
 const selectBlockBar = document.getElementById("selectBlock");
 const layerBar = document.getElementById("layer");
+const brushBar = document.getElementById("brushType");
 
 const newFileInput = document.getElementById("newFile");
 const exportInput = document.getElementById("exportFile");
@@ -26,6 +62,8 @@ const fileNameInput = document.getElementById("volume");
 const paletteSizeInput = document.getElementById("paletteSize");
 const maxHeightInput = document.getElementById("maxHeight");
 const waterLevelInput = document.getElementById("waterLevelHeight");
+
+const restoreDefault = document.getElementById("restoreDefault");
 
 function changeMode(e) {
   const name = e.currentTarget.id;
@@ -37,6 +75,67 @@ function changeSelectLayer(e) {
   const name = e.currentTarget.id;
   state.selectedLayer = name;
   layerBar.textContent = `Layer: ${name}`;
+}
+
+async function loadBrush(filename) {
+  return new Promise((resolve) => {
+    const brushImg = new Image();
+    brushImg.src = `brushes/${filename}`;
+    brushImg.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = brushImg.width;
+      canvas.height = brushImg.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(brushImg, 0, 0);
+      const data = ctx.getImageData(0, 0, brushImg.width, brushImg.height).data;
+
+      const normalized = [];
+      for(let y=0; y<brushImg.height; y++){
+        normalized[y] = [];
+        for(let x=0; x<brushImg.width; x++){
+          const idx = (y * brushImg.width + x) * 4;
+          const r = data[idx];
+          normalized[y][x] = 1 - r / 255;
+        }
+      }
+      resolve({ filename, normalized });
+    };
+  });
+}
+
+async function loadAllBrushes(brushImages) {
+  const container = document.getElementById("brushUI");
+  const promises = brushImages.map(filename => loadBrush(filename));
+
+  const results = await Promise.all(promises);
+  const loadedBrushes = {};
+  results.forEach(({ filename: name, normalized }) => {
+    loadedBrushes[name] = normalized;
+
+    const brushTitle = name.replace(/\.[^/.]+$/, "");
+    const brushId = brushTitle.replace(/\s+/g, "_");
+
+    const button = document.createElement("button");
+    button.className = "BlockButton";
+    button.title = brushTitle;
+    button.id = brushId;
+
+    const img = document.createElement("img");
+    img.src = `brushes/${name}`;
+    img.width = 24;
+    button.appendChild(img);
+    container.appendChild(button);
+
+    button.addEventListener("click", () => {
+      brushBar.textContent = `Brush: ${button.title}`;
+      brushState.brushType = name;
+      console.log(`${button.title} brush clicked`);
+    });
+
+    console.log(`Loaded brush: ${name}`);
+  });
+
+  brushState.loadedBrushes = loadedBrushes;
 }
 
 function applyWaterLevel(){
@@ -185,5 +284,32 @@ export function eventInit() {
     state.waterLevel = value;
     applyWaterLevel();
     console.log("maxHeight:", state.waterLevel);
+  })
+
+  Object.keys(brushState).forEach(id => {
+    const element = document.getElementById(id);
+    if (!element) return;
+
+    element.addEventListener("input", (e) => {
+      const el = e.target;
+
+      switch(el.type){
+        case "checkbox":
+          brushState[id] = el.checked;
+          break;
+        case "number":
+        case "range":
+          brushState[id] = parseFloat(el.value);
+          break;
+        default:
+          brushState[id] = el.value;
+      }
+    });
+  });
+  loadAllBrushes(brushImages);
+
+  restoreDefault.addEventListener("click", (e) => {
+    brushBar.textContent = `Brush: default`;
+    brushState.brushType = "default";
   })
 }

@@ -1,7 +1,7 @@
 export const chunkSize = 32;
 export const cellSize = 10;
 
-export const contour = 5;
+export const contour = 10;
 export const DEFAULT_COLOR = [255,0,255];
 
 export const blockColors = {
@@ -88,6 +88,21 @@ export const state = {
 
   get widthLength() { return this.chunkLenX * chunkSize; },
   get heightLength() { return this.chunkLenZ * chunkSize; }
+};
+
+export const brushState = {
+  atOrAboveEnabled: false,      // チェックボックスは初期オフ
+  orAboveRangeInput: 0,         // number input 初期値 0
+  atOrBelowEnabled: false,      // チェックボックスは初期オフ
+  atOrBelowRangeInput: 0,       // number input 初期値 0
+  onlyBlockEnabled: false,      // チェックボックスは初期オフ
+  onlyBlockInput: "Dirt",       // テキスト入力の初期値
+  angleLimitAbove: false,       // チェックボックスは初期オフ
+  angleLimitBelow: false,       // チェックボックスは初期オフ
+  orAngleRangeInput: 0,          // number input 初期値 0
+
+  brushType: "default",
+  loadedBrushes: null,
 };
 
 export function initChunks(){
