@@ -1,49 +1,27 @@
 import {
-  state,
+  state, chunkSize,
   cellSize, contour, DEFAULT_COLOR,
   blockColors, layerColors,
 } from "./state.js";
 import { nameToId } from "./nameMap.js";
 
 const idToName = Object.fromEntries(
-  Object.entries(nameToId).map(([k,v]) => [v,k])
-);
+  Object.entries(nameToId).map(([key,value])=>[value, key])
+)
 
-function drawBrushPreview(canvas){
-  const ctx = canvas.getContext("2d");
-  const radius = state.brushRadius * cellSize * state.zoom;
+function getColor(blockName) {
+  if (colorCache.has(blockName)) return colorCache.get(blockName);
 
-  ctx.beginPath();
-  ctx.arc(state.mouseX, state.mouseY, radius, 0, Math.PI * 2);
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  console.log(blockName);
+  const base = blockColors[blockName] ?? DEFAULT_COLOR;
+  if(blockName==="Water")console.log("水だ水!")
+  const color = `rgb(${base[0]},${base[1]},${base[2]})`;
+
+  colorCache.set(blockName, color);
+  return color;
 }
 
-function drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY) {
-  const chunk = 32;
-
-  ctx.strokeStyle = "rgba(255,255,255,0.2)";
-  ctx.lineWidth = 1;
-
-  for (let x = Math.floor(startX / chunk) * chunk; x <= endX; x += chunk) {
-    const px = x * size + state.camX;
-
-    ctx.beginPath();
-    ctx.moveTo(px, 0);
-    ctx.lineTo(px, canvas.height);
-    ctx.stroke();
-  }
-
-  for (let y = Math.floor(startY / chunk) * chunk; y <= endY; y += chunk) {
-    const py = y * size + state.camY;
-
-    ctx.beginPath();
-    ctx.moveTo(0, py);
-    ctx.lineTo(canvas.width, py);
-    ctx.stroke();
-  }
-}
+const colorCache = new Map();
 
 export function updateBlockMap() {
   const newMap = Array.from({ length: state.maxHeight }, () =>
@@ -68,59 +46,86 @@ export function updateBlockMap() {
   state.blockMap = newMap;
 }
 
-export function draw(canvas){
+function drawBrushPreview(canvas){ 
+  const ctx = canvas.getContext("2d"); 
+  const radius = state.brushRadius * cellSize * state.zoom; 
+  ctx.beginPath(); 
+  ctx.arc(state.mouseX, state.mouseY, radius, 0, Math.PI * 2); 
+  ctx.strokeStyle = "white"; 
+  ctx.lineWidth = 2; 
+  ctx.stroke(); 
+}
+
+function drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY) { 
+  const chunk = 32; 
+  ctx.strokeStyle = "rgba(255,255,255,0.2)"; 
+  ctx.lineWidth = 1; 
+  for (let x = Math.floor(startX / chunk) * chunk; x <= endX; x += chunk) {
+    const px = x * size + state.camX; 
+    ctx.beginPath(); ctx.moveTo(px, 0); 
+    ctx.lineTo(px, canvas.height); 
+    ctx.stroke(); 
+  } 
+  for (let y = Math.floor(startY / chunk) * chunk; y <= endY; y += chunk) {
+    const py = y * size + state.camY; 
+    ctx.beginPath(); ctx.moveTo(0, py); 
+    ctx.lineTo(canvas.width, py); 
+    ctx.stroke(); 
+  } 
+}
+
+function renderChunk(cx, cy){
+  const size = cellSize;
+
+  let canvas = state.chunkCanvas[cy][cx];
+  if(!canvas){
+    canvas = document.createElement("canvas");
+    state.chunkCanvas[cy][cx] = canvas;
+  }
+
+  canvas.width = chunkSize * size;
+  canvas.height = chunkSize * size;
+
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const size = cellSize * state.zoom;
+  const startX = cx * chunkSize;
+  const startY = cy * chunkSize;
+  const endX = Math.min(startX + chunkSize, state.widthLength);
+  const endY = Math.min(startY + chunkSize, state.heightLength);
 
-  const startX = Math.max(0, Math.floor(-state.camX / size));
-  const startY = Math.max(0, Math.floor(-state.camY / size));
-  const endX = Math.min(state.widthLength, Math.ceil((canvas.width - state.camX) / size));
-  const endY = Math.min(state.heightLength, Math.ceil((canvas.height - state.camY) / size));
+  ctx.beginPath();
 
-  for (let y = startY; y < endY; y++) {
-    for (let x = startX; x < endX; x++) {
+  for(let y = startY; y < endY; y++){
+    const row = state.map[y];
+    const layerRow = state.layerMap[y];
 
-      const h = state.map[y][x];
-      const blockY = Math.min(Math.floor(h), state.maxHeight - 1);
+    for(let x = startX; x < endX; x++){
+
+      const h = row[x] | 0;
+      const blockY = h < state.maxHeight ? h : state.maxHeight - 1;
       const blockId = state.blockMap[blockY]?.[y]?.[x] ?? 0;
+
       const blockName = idToName[blockId] ?? "Air";
-      const baseColor = blockColors[blockName] ?? DEFAULT_COLOR;
 
-      const isRange = x > 0 && y > 0 && x < state.widthLength-1 && y < state.heightLength-1;
+      const isUnderWater = h < state.waterLevel;
+      const px = (x - startX) * size;
+      const py = (y - startY) * size;
 
-      const diffWidth = isRange ? state.map[y][x-1] - state.map[y][x+1] : 0;
-      const diffHeight = isRange ? state.map[y-1][x] - state.map[y+1][x] : 0;
-
-      let delta = diffWidth + diffHeight;
-      if(state.leftDown || state.rightDown){
-        delta = Math.max(-5, Math.min(5, delta));
-      }
-
-      let brightness = 1 - delta * 0.01;
-      brightness = Math.max(0.3, Math.min(1.3, brightness));
-
-      const r = baseColor[0] * brightness | 0;
-      const g = baseColor[1] * brightness | 0;
-      const b = baseColor[2] * brightness | 0;
-
-      ctx.fillStyle = `rgb(${r},${g},${b})`;
-
-      const px = x * size + state.camX;
-      const py = y * size + state.camY;
-
+      ctx.fillStyle = getColor(blockName);
       ctx.fillRect(px, py, size, size);
-
-      const layer = state.layerMap[y][x];
+      
+      if(isUnderWater){
+        ctx.fillStyle = "rgba(135,206,235,0.5)";
+        ctx.fillRect(px, py, size, size);
+      }
+      const layer = layerRow[x];
       if(layer){
         const c = layerColors[layer];
         if(c){
-          if(layer === state.selectedLayer){
-            ctx.fillStyle = `rgba(50,255,50,0.5)`;
-          } else {
-            ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},0.35)`;
-          }
+          ctx.fillStyle = (layer === state.selectedLayer)
+            ? "rgba(50,255,50,0.5)"
+            : `rgba(${c[0]},${c[1]},${c[2]},0.35)`;
           ctx.fillRect(px, py, size, size);
         }
       }
@@ -128,30 +133,77 @@ export function draw(canvas){
       const level = (h / contour) | 0;
 
       if (x < state.widthLength - 1) {
-        const rightLevel = (state.map[y][x+1] / contour) | 0;
+        const rightLevel = ((row[x+1]) / contour) | 0;
         if (level !== rightLevel) {
-          ctx.beginPath();
-          ctx.moveTo((x+1)*size + state.camX, y*size + state.camY);
-          ctx.lineTo((x+1)*size + state.camX, (y+1)*size + state.camY);
-          ctx.strokeStyle = "black";
-          ctx.stroke();
+          ctx.moveTo((x-startX+1)*size, (y-startY)*size);
+          ctx.lineTo((x-startX+1)*size, (y-startY+1)*size);
         }
       }
 
       if (y < state.heightLength - 1) {
-        const downLevel = (state.map[y+1][x] / contour) | 0;
+        const downLevel = ((state.map[y+1][x]) / contour) | 0;
         if (level !== downLevel) {
-          ctx.beginPath();
-          ctx.moveTo(x*size + state.camX, (y+1)*size + state.camY);
-          ctx.lineTo((x+1)*size + state.camX, (y+1)*size + state.camY);
-          ctx.strokeStyle = "black";
-          ctx.stroke();
+          ctx.moveTo((x-startX)*size, (y-startY+1)*size);
+          ctx.lineTo((x-startX+1)*size, (y-startY+1)*size);
         }
       }
     }
   }
 
-  drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY);
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = Math.max(1, 2 / state.zoom);
+  ctx.stroke();
+}
+
+export function draw(canvas){
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.imageSmoothingEnabled = false;
+
+  const size = cellSize * state.zoom;
+
+  const chunkPixel = chunkSize * size;
+
+  const startChunkX = Math.max(0, Math.floor(-state.camX / chunkPixel));
+  const startChunkY = Math.max(0, Math.floor(-state.camY / chunkPixel));
+  const endChunkX = Math.min(state.chunkCols, Math.ceil((canvas.width - state.camX) / chunkPixel));
+  const endChunkY = Math.min(state.chunkRows, Math.ceil((canvas.height - state.camY) / chunkPixel));
+
+  for(const key of state.dirtyChunks){
+    const [cx, cy] = key.split(",").map(Number);
+    renderChunk(cx, cy);
+  }
+  state.dirtyChunks.clear();
+
+  for(let cy = startChunkY; cy < endChunkY; cy++){
+    for(let cx = startChunkX; cx < endChunkX; cx++){
+
+      const chunk = state.chunkCanvas[cy][cx];
+      if(!chunk) continue;
+
+      const px = Math.round(cx * chunkPixel + state.camX);
+      const py = Math.round(cy * chunkPixel + state.camY);
+
+      ctx.drawImage(
+        chunk,
+        px,
+        py,
+        Math.round(chunk.width * state.zoom),
+        Math.round(chunk.height * state.zoom)
+      );
+    }
+  }
+
+  drawChunkGrid(
+    ctx,
+    canvas,
+    size,
+    startChunkX * chunkSize,
+    startChunkY * chunkSize,
+    endChunkX * chunkSize,
+    endChunkY * chunkSize
+  );
+
   drawBrushPreview(canvas);
-  //updateBlockMap();
 }

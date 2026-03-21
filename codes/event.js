@@ -8,9 +8,8 @@ import {
   treesStructures
 } from "./state.js";
 
-import { brush } from "./brush.js";
 import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
-import { resizeMap } from "./utils.js";
+import { resizeMap, resizeHeight } from "./utils.js";
 
 const canvas = document.getElementById("canvas");
 
@@ -26,7 +25,7 @@ const exportInput = document.getElementById("exportFile");
 const fileNameInput = document.getElementById("volume");
 const paletteSizeInput = document.getElementById("paletteSize");
 const maxHeightInput = document.getElementById("maxHeight");
-const defaultBlockSelect = document.getElementById("defaultBlock");
+const waterLevelInput = document.getElementById("waterLevelHeight");
 
 function changeMode(e) {
   const name = e.currentTarget.id;
@@ -38,6 +37,38 @@ function changeSelectLayer(e) {
   const name = e.currentTarget.id;
   state.selectedLayer = name;
   layerBar.textContent = `Layer: ${name}`;
+}
+
+function applyWaterLevel(){
+  const width = state.widthLength;
+  const height = state.heightLength;
+  const maxH = state.maxHeight;
+
+  const waterId = 126;
+  const waterLevel = state.waterLevel;
+
+  for(let z = 0; z < height; z++){
+    for(let x = 0; x < width; x++){
+      for(let y = 0; y < maxH; y++){
+        if(state.blockMap[y][z][x] === waterId){
+          state.blockMap[y][z][x] = 0;
+        }
+      }
+      for(let y = 0; y <= waterLevel; y++){
+        if(y >= maxH) break;
+
+        if(state.blockMap[y][z][x] === 0){
+          state.blockMap[y][z][x] = waterId;
+        }
+      }
+    }
+  }
+
+  for(let cy = 0; cy < state.chunkRows; cy++){
+    for(let cx = 0; cx < state.chunkCols; cx++){
+      state.dirtyChunks.add(`${cx},${cy}`);
+    }
+  }
 }
 
 export function eventInit() {
@@ -71,7 +102,7 @@ export function eventInit() {
   window.addEventListener("wheel", (e) => {
     if (e.shiftKey) {
       state.zoom += e.deltaY > 0 ? -0.1 : 0.1;
-      state.zoom = Math.max(0.3, Math.min(4, state.zoom));
+      state.zoom = Math.max(0.1, Math.min(4, state.zoom));
       zoomSizeBar.textContent = `Zoom: ${state.zoom.toFixed(2)}`;
       return;
     }
@@ -82,7 +113,9 @@ export function eventInit() {
   });
 
   canvas.addEventListener("mousemove", (e) => {
-    brush(e);
+    state.mouseX = e.offsetX;
+    state.mouseY = e.offsetY;
+
     if (!state.panning) return;
 
     const dx = e.clientX - state.panStartX;
@@ -97,7 +130,7 @@ export function eventInit() {
 
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
-  ["height", "flatten", "sprayPaint", "smooth", "layerPaint", "fillWithWater", "Sponge"].forEach(id => {
+  ["height", "flatten", "sprayPaint", "smooth", "layerPaint"].forEach(id => {
     document.getElementById(id).addEventListener("click", changeMode);
   });
 
@@ -143,11 +176,14 @@ export function eventInit() {
   maxHeightInput.addEventListener("input", (e) => {
     const value = parseInt(e.target.value) || 64;
     state.maxHeight = value;
+    resizeHeight(value);
     console.log("maxHeight:", state.maxHeight);
   });
 
-  /*defaultBlockSelect.addEventListener("change", (e) => {
-    paletteSettings.defaultBlock = e.target.value;
-    console.log("defaultBlock:", paletteSettings.defaultBlock);
-  });*/
+  waterLevelInput.addEventListener("input", (e)=>{
+    const value = parseInt(e.target.value) || 0;
+    state.waterLevel = value;
+    applyWaterLevel();
+    console.log("maxHeight:", state.waterLevel);
+  })
 }

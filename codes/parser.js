@@ -57,8 +57,8 @@ export function growForest(state, pine, spacing = 8){
 
   for(let z = 0; z < height; z += spacing){
     for(let x = 0; x < width; x += spacing){
-      const nx = x + Math.floor(Math.random() * (spacing/2)) - Math.floor(spacing/4) - 1;
-      const nz = z + Math.floor(Math.random() * (spacing/2)) - Math.floor(spacing/4) - 1;
+      const nx = x + Math.floor(Math.random() * (spacing/2)) - Math.floor(spacing/4);
+      const nz = z + Math.floor(Math.random() * (spacing/2)) - Math.floor(spacing/4);
 
       if(nx < 0 || nz < 0 || nx + patternWidth > width || nz + patternDepth > height) continue;
 

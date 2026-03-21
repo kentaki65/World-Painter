@@ -30,7 +30,8 @@ canvas {
   flex-direction: column;
   width: 200px;     
   flex-shrink: 0;
-  border-right: 2px solid gray;        
+  border-right: 2px solid gray;   
+  border-left: 2px solid gray;     
 }
 
 .labels {

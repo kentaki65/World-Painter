@@ -55,8 +55,6 @@ export const state = {
   // サイズ系
   chunkLenX: 4,
   chunkLenZ: 4,
-  get widthLength() { return this.chunkLenX * chunkSize; },
-  get heightLength() { return this.chunkLenZ * chunkSize; },
   maxHeight: 64,
 
   //マップ
@@ -64,6 +62,7 @@ export const state = {
   blockMap: null,
   layerMap: null,
   fileName: "schem",
+  waterLevel: 10,
 
   // 編集系
   leftDown: false,
@@ -80,8 +79,33 @@ export const state = {
   mode: "height",
   targetHeight: null,
   selectedBlock: "Grass Block",
-  selectedLayer: "layerPineForest"
+  selectedLayer: "layerPineForest",
+
+  chunkCols: 0,
+  chunkRows: 0,
+  chunkCanvas: null,
+  dirtyChunks: new Set(),
+
+  get widthLength() { return this.chunkLenX * chunkSize; },
+  get heightLength() { return this.chunkLenZ * chunkSize; }
 };
+
+export function initChunks(){
+  state.chunkCols = Math.ceil(state.widthLength / chunkSize);
+  state.chunkRows = Math.ceil(state.heightLength / chunkSize);
+
+  state.chunkCanvas = Array.from({ length: state.chunkRows }, () =>
+    Array.from({ length: state.chunkCols }, () => null)
+  );
+
+  state.dirtyChunks.clear();
+
+  for(let cy = 0; cy < state.chunkRows; cy++){
+    for(let cx = 0; cx < state.chunkCols; cx++){
+      state.dirtyChunks.add(`${cx},${cy}`);
+    }
+  }
+}
 
 export const mapInit = () =>
   Array.from({ length: state.heightLength }, () =>

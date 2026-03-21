@@ -1,20 +1,37 @@
-import { state, cellSize } from "./state.js";
+import { state, chunkSize, cellSize } from "./state.js";
 import { heightClamp, lerp } from "./utils.js";
-import { updateBlockMap } from "./render.js";
 import { nameToId } from "./nameMap.js";
 
-let kernelCache = null;
-let kernelRadius = -1;
+function updateBlockData(x, z, oldH, newH){
+  const oldY = Math.floor(oldH);
+  const newY = Math.floor(newH);
+
+  if(newY > oldY){
+    for(let y = oldY + 1; y <= newY; y++){
+      if(y >= state.maxHeight) break;
+      if(y === newY){
+        state.blockMap[y][z][x] = nameToId["Grass Block"];
+      }
+    }
+  }
+
+  else if(newY < oldY){
+    for(let y = newY + 1; y <= oldY; y++){
+      if(y >= state.maxHeight) break;
+      state.blockMap[y][z][x] = 0;
+    }
+  }
+}
 
 function normalBrush(cellX, cellY){
   const r = state.brushRadius;
-
   for(let dy = -r; dy <= r; dy++){
     for(let dx = -r; dx <= r; dx++){
       const x = cellX + dx;
       const y = cellY + dy;
       if(x < 0 || y < 0 || x >= state.widthLength || y >= state.heightLength) continue;
 
+      const oldH = state.map[y][x];
       const distance = Math.hypot(dx, dy);
       if(distance > r) continue;
 
@@ -26,91 +43,66 @@ function normalBrush(cellX, cellY){
             lerp(state.map[y][x], state.targetHeight, 0.08 * normalized)
           );
         } else {
-          // 高さを盛る
           state.map[y][x] = heightClamp(
             state.map[y][x] + (r - distance) * 0.03 * normalized
           );
         }
       } else if(state.rightDown){
         if(state.mode !== "flatten"){
-          // 高さを下げる
           state.map[y][x] = heightClamp(
             state.map[y][x] - (r - distance) * 0.03 * normalized
           );
         }
       }
+      const newH = state.map[y][x];
+      updateBlockData(x, y, oldH, newH);
     }
   }
 }
 
-// ガウシアンカーネルを返す
-function getKernel(radius){
-  if(kernelCache && kernelRadius === radius) return kernelCache;
+function markDirtyArea(cx, cy, r){
+  const minX = Math.max(0, cx - r);
+  const maxX = Math.min(state.widthLength - 1, cx + r);
+  const minY = Math.max(0, cy - r);
+  const maxY = Math.min(state.heightLength - 1, cy + r);
 
-  const sigma = radius / 2;
-  const twoSigmaSq = 2 * sigma * sigma;
-  const size = radius * 2 + 1;
-  const kernel = [];
-
-  for(let y = -radius; y <= radius; y++){
-    const row = [];
-    for(let x = -radius; x <= radius; x++){
-      const d2 = x*x + y*y;
-      row.push(d2 > radius*radius ? 0 : Math.exp(-d2 / twoSigmaSq));
+  for(let y = minY; y <= maxY; y += chunkSize){
+    for(let x = minX; x <= maxX; x += chunkSize){
+      const ccx = (x / chunkSize) | 0;
+      const ccy = (y / chunkSize) | 0;
+      state.dirtyChunks.add(`${ccx},${ccy}`);
     }
-    kernel.push(row);
   }
-
-  kernelCache = kernel;
-  kernelRadius = radius;
-  return kernel;
 }
 
-// 滑らかブラシ
 function smoothBrush(cellX, cellY){
   const r = state.brushRadius;
-  const kernel = getKernel(r);
-
-  const minX = Math.max(0, cellX - r);
-  const maxX = Math.min(state.widthLength - 1, cellX + r);
-  const minY = Math.max(0, cellY - r);
-  const maxY = Math.min(state.heightLength - 1, cellY + r);
-
-  const copy = [];
-  for(let y = minY; y <= maxY; y++){
-    copy.push(state.map[y].slice(minX, maxX + 1));
-  }
 
   for(let dy = -r; dy <= r; dy++){
     for(let dx = -r; dx <= r; dx++){
       const x = cellX + dx;
       const y = cellY + dy;
-      if(x < 0 || x >= state.widthLength || y < 0 || y >= state.heightLength) continue;
+
+      if(x < 1 || y < 1 || x >= state.widthLength-1 || y >= state.heightLength-1) continue;
+
       const d2 = dx*dx + dy*dy;
       if(d2 > r*r) continue;
 
-      let sum = 0;
-      let weightSum = 0;
+      const oldH = state.map[y][x];
 
-      for(let ky = -r; ky <= r; ky++){
-        for(let kx = -r; kx <= r; kx++){
-          const nx = x + kx;
-          const ny = y + ky;
-          if(nx < minX || nx > maxX || ny < minY || ny > maxY) continue;
-          const weight = kernel[ky + r][kx + r];
-          if(weight === 0) continue;
-          sum += copy[ny - minY][nx - minX] * weight;
-          weightSum += weight;
-        }
-      }
+      const avg =
+        (oldH +
+         state.map[y][x-1] +
+         state.map[y][x+1] +
+         state.map[y-1][x] +
+         state.map[y+1][x]) / 5;
 
-      if(weightSum === 0) continue;
+      const strength = 0.2 * (1 - d2/(r*r));
 
-      const avg = sum / weightSum;
-      const distFactor = 1 - (d2 / (r*r));
-      const strength = 0.15 * distFactor;
+      const newH = heightClamp(lerp(oldH, avg, strength));
+      state.map[y][x] = newH;
 
-      state.map[y][x] = heightClamp(lerp(state.map[y][x], avg, strength));
+      updateBlockData(x, y, oldH, newH);
     }
   }
 }
@@ -131,110 +123,57 @@ function sprayBrush(cellX, cellY){
     if(x < 0 || z < 0 || x >= state.widthLength || z >= state.heightLength) continue;
 
     if(state.leftDown){
+
       let yTop = -1;
+
       for(let y = state.maxHeight - 1; y >= 0; y--){
-        if(state.blockMap[y][z][x] !== 0){ 
+        if(state.blockMap[y][z][x] !== 0){
           yTop = y;
           break;
         }
       }
 
-      if(yTop === -1) continue; 
-      console.log(state.selectedBlock);
+      if(yTop === -1) continue;
+
       state.blockMap[yTop][z][x] = nameToId[state.selectedBlock];
+      const ccx = (x / chunkSize) | 0;
+      const ccy = (z / chunkSize) | 0;
+      state.dirtyChunks.add(`${ccx},${ccy}`);
     }
   }
 }
-
-function layerBrush(cellX, cellY) {
+function layerBrush(cellX, cellY){
   const r = state.brushRadius;
+  const r2 = r*r;
 
-  for (let dy = -r; dy <= r; dy++) {
-    for (let dx = -r; dx <= r; dx++) {
-      const distance = Math.hypot(dx, dy);
-      if (distance > r) continue; // 円形ブラシにする場合
+  for(let dy = -r; dy <= r; dy++){
+    for(let dx = -r; dx <= r; dx++){
+      if(dx*dx + dy*dy > r2) continue;
 
       const x = cellX + dx;
       const y = cellY + dy;
 
-      if (x < 0 || y < 0 || x >= state.widthLength || y >= state.heightLength) continue;
+      if(x < 0 || y < 0 || x >= state.widthLength || y >= state.heightLength) continue;
 
-      if (state.leftDown) {
+      if(state.leftDown){
         state.layerMap[y][x] = state.selectedLayer;
       }
-      if (state.rightDown) {
+      else if(state.rightDown){
         state.layerMap[y][x] = null;
       }
+
+      const ccx = (x / chunkSize) | 0;
+      const ccy = (y / chunkSize) | 0;
+      state.dirtyChunks.add(`${ccx},${ccy}`);
     }
   }
 }
 
-function fillWaterAll(cellX, cellY) {
-  const width = state.widthLength;
-  const height = state.heightLength;
-  const maxH = state.maxHeight;
-
-  const waterId = 126;
-  
-  for (let z = 0; z < height; z++) {
-    for (let x = 0; x < width; x++) {
-      let maxWaterHeight = -1;
-
-      for (let y = 0; y <= state.map[cellY][cellX]; y++) {
-        if (state.blockMap[y][z][x] === 0) {
-          state.blockMap[y][z][x] = waterId;
-          maxWaterHeight = y;
-        }
-      }
-
-      if (maxWaterHeight >= 0) {
-        state.map[z][x] = Math.max(state.map[z][x], maxWaterHeight + 1);
-      }
-    }
-  }
-}
-
-export function spongeAll(cellX, cellY) {
-  const width = state.widthLength;
-  const height = state.heightLength;
-  const maxH = state.maxHeight;
-
-  const airId = 0;
-  const waterId = 126;
-
-  // クリックした座標に水がなければ何もしない
-  if (state.blockMap[cellY][cellY][cellX] !== waterId) return;
-
-  for (let z = 0; z < height; z++) {
-    for (let x = 0; x < width; x++) {
-      // 水を空気に置換
-      for (let y = 0; y < maxH; y++) {
-        if (state.blockMap[y][z][x] === waterId) {
-          state.blockMap[y][z][x] = airId;
-        }
-      }
-
-      // state.map を更新（最上部の非空気ブロック）
-      for (let y = maxH - 1; y >= 0; y--) {
-        if (state.blockMap[y][z][x] !== airId) {
-          state.map[z][x] = y + 1;
-          break;
-        }
-        if (y === 0) state.map[z][x] = 0;
-      }
-    }
-  }
-
-  updateBlockMap();
-}
-
-export function brush(e){
-  state.mouseX = e.offsetX;
-  state.mouseY = e.offsetY;
-
+export function applyBrush(){
   const size = cellSize * state.zoom;
-  const cellX = Math.floor((e.offsetX - state.camX) / size);
-  const cellY = Math.floor((e.offsetY - state.camY) / size);
+  const cellX = Math.floor((state.mouseX - state.camX) / size);
+  const cellY = Math.floor((state.mouseY - state.camY) / size);
+
   if(cellX < 0 || cellY < 0 || cellX >= state.widthLength || cellY >= state.heightLength) return;
 
   const locationBar = document.getElementById("location");
@@ -255,14 +194,7 @@ export function brush(e){
     layerBrush(cellX, cellY);
     return;
   }
-  if(state.mode === "fillWithWater"){
-    fillWaterAll(cellX, cellY);
-    return;
-  }
-  if(state.mode === "Sponge"){
-    spongeAll(cellX, cellY);
-    return;
-  }
+  markDirtyArea(cellX, cellY, state.brushRadius);
   normalBrush(cellX, cellY);
-  updateBlockMap();
+  updateBlockData(cellX, cellY);
 }
