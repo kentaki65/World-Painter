@@ -97,9 +97,6 @@ export const brushState = {
   atOrBelowRangeInput: 0,       // number input 初期値 0
   onlyBlockEnabled: false,      // チェックボックスは初期オフ
   onlyBlockInput: "Dirt",       // テキスト入力の初期値
-  angleLimitAbove: false,       // チェックボックスは初期オフ
-  angleLimitBelow: false,       // チェックボックスは初期オフ
-  orAngleRangeInput: 0,          // number input 初期値 0
 
   brushType: "default",
   loadedBrushes: null,

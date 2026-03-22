@@ -106,31 +106,29 @@ function convertChunks(state) {
   const chunkCountY = Math.ceil(maxUsedHeight / chunkSize);
 
   for (let cx = 0; cx < chunkCountX; cx++) {
-    for (let cy = 0; cy < chunkCountY; cy++) {
-      for (let cz = 0; cz < chunkCountZ; cz++) {
+    for (let cz = 0; cz < chunkCountZ; cz++) {
+      for (let cy = 0; cy < chunkCountY; cy++) {
         const blocks = [];
+
         for (let x = 0; x < chunkSize; x++) {
-          for (let y = 0; y < chunkSize; y++) {
+          for (let y = 0; y < chunkSize; y++) { // Yは高さ
             for (let z = 0; z < chunkSize; z++) {
               const wx = cx * chunkSize + x;
-              const wy = cy * chunkSize + y;
               const wz = cz * chunkSize + z;
+              const wy = cy * chunkSize + y;
               let id = 0;
 
               if (wx < state.widthLength && wz < state.heightLength && wy < state.maxHeight) {
                 const surfaceBlock = state.blockMap[wy]?.[wz]?.[wx];
-
                 if (surfaceBlock && surfaceBlock !== 0) {
                   id = surfaceBlock;
                 } else {
                   const height = Math.floor(state.map[wz][wx]);
-                  const depthFromTop = height - wy;
-
                   if (wy > height) {
                     id = 0; // 空気
-                  } else if (depthFromTop === 0) {
-                    id = 1; // 草ブロック
-                  } else if (depthFromTop <= 3) {
+                  } else if (wy === height) {
+                    id = 1; // 草
+                  } else if (wy >= height - 3) {
                     id = nameToId.Dirt;
                   } else {
                     id = nameToId.Stone;
@@ -142,11 +140,11 @@ function convertChunks(state) {
             }
           }
         }
+
         chunks.push({ x: cx, y: cy, z: cz, blocks });
       }
     }
   }
-
   let minCX = Infinity, minCY = Infinity, minCZ = Infinity;
   let maxCX = -Infinity, maxCY = -Infinity, maxCZ = -Infinity;
 
@@ -178,65 +176,34 @@ function convertChunks(state) {
 }
 
 const splitBloxdschem = function (json) {
-  const schems = [];
-  const zySize = Math.ceil(json.sizeY / 32) * Math.ceil(json.sizeZ / 32);
-  const sliceSize = Math.floor(200 / zySize);
+	const schems = [];
+	const zySize = Math.ceil(json.sizeY / 32) * Math.ceil(json.sizeZ / 32);
+	const sliceSize = Math.floor(200 / zySize);
+	let currOffset = 0;
+	while (true) {
+		const chunksSlice = json.chunks.splice(0, zySize * sliceSize);
+		if (!chunksSlice.length) break;
 
-  let currOffset = 0;
+		chunksSlice.map(chunk => chunk.x -= currOffset);
 
-  while (true) {
-    const expectedCount = zySize * sliceSize;
-    const chunksSlice = json.chunks.splice(0, expectedCount);
-    if (!chunksSlice.length) break;
+		schems.push({
+			name: json.name,
+			x: 0,
+			y: 0,
+			z: 0,
+			sizeX: Math.min(json.sizeX, sliceSize * 32),
+			sizeY: json.sizeY,
+			sizeZ: json.sizeZ,
+			chunks: chunksSlice
+		})
+		currOffset += sliceSize;
+	}
+	return {
+		schems: schems,
+		sliceSize: sliceSize
+	};
+}
 
-    const chunkMap = new Map();
-    for (const c of chunksSlice) {
-      chunkMap.set(`${c.x},${c.y},${c.z}`, c);
-    }
-
-    const filledChunks = [];
-
-    for (let x = currOffset; x < currOffset + sliceSize; x++) {
-      for (let y = 0; y < Math.ceil(json.sizeY / 32); y++) {
-        for (let z = 0; z < Math.ceil(json.sizeZ / 32); z++) {
-
-          const key = `${x},${y},${z}`;
-          let chunk = chunkMap.get(key);
-
-          if (!chunk) {
-            chunk = {
-              x: x,
-              y: y,
-              z: z,
-              blocks: new Array(32*32*32).fill(0)
-            };
-          }
-
-          chunk.x -= currOffset;
-          filledChunks.push(chunk);
-        }
-      }
-    }
-
-    schems.push({
-      name: json.name,
-      x: 0,
-      y: 0,
-      z: 0,
-      sizeX: sliceSize * 32,
-      sizeY: json.sizeY,
-      sizeZ: json.sizeZ,
-      chunks: filledChunks
-    });
-
-    currOffset += sliceSize;
-  }
-
-  return {
-    schems,
-    sliceSize
-  };
-};
 async function downloadSchems(result) {
 	const zip = new JSZip();
 	result.schems.forEach((bin, i) => {

@@ -10,7 +10,7 @@ import {
 } from "./state.js";
 
 import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
-import { resizeMap, resizeHeight } from "./utils.js";
+import { resizeMap, resizeHeight, hideLoading, showLoading } from "./utils.js";
 
 const brushImages = [
   "Circle Mountain 2.png",
@@ -106,37 +106,42 @@ async function loadBrush(filename) {
 
 async function loadAllBrushes(brushImages) {
   const container = document.getElementById("brushUI");
-  const promises = brushImages.map(filename => loadBrush(filename));
+  showLoading();
+  try {
+    await new Promise(r => setTimeout(r, 0));
+    const results = await Promise.all(
+      brushImages.map(filename => loadBrush(filename))
+    );
+    const loadedBrushes = {};
+    for (const { filename: name, normalized } of results) {
+      loadedBrushes[name] = normalized;
 
-  const results = await Promise.all(promises);
-  const loadedBrushes = {};
-  results.forEach(({ filename: name, normalized }) => {
-    loadedBrushes[name] = normalized;
+      const brushTitle = name.replace(/\.[^/.]+$/, "");
+      const brushId = brushTitle.replace(/\s+/g, "_");
 
-    const brushTitle = name.replace(/\.[^/.]+$/, "");
-    const brushId = brushTitle.replace(/\s+/g, "_");
+      const button = document.createElement("button");
+      button.className = "BlockButton";
+      button.title = brushTitle;
+      button.id = brushId;
 
-    const button = document.createElement("button");
-    button.className = "BlockButton";
-    button.title = brushTitle;
-    button.id = brushId;
+      const img = document.createElement("img");
+      img.src = `brushes/${name}`;
+      img.width = 24;
 
-    const img = document.createElement("img");
-    img.src = `brushes/${name}`;
-    img.width = 24;
-    button.appendChild(img);
-    container.appendChild(button);
+      button.appendChild(img);
+      container.appendChild(button);
 
-    button.addEventListener("click", () => {
-      brushBar.textContent = `Brush: ${button.title}`;
-      brushState.brushType = name;
-      console.log(`${button.title} brush clicked`);
-    });
-
-    console.log(`Loaded brush: ${name}`);
-  });
-
-  brushState.loadedBrushes = loadedBrushes;
+      button.addEventListener("click", () => {
+        brushBar.textContent = `Brush: ${brushTitle}`;
+        brushState.brushType = name;
+      });
+    }
+    brushState.loadedBrushes = loadedBrushes;
+  } catch (e) {
+    console.error("Brush load failed:", e);
+  } finally {
+    hideLoading();
+  }
 }
 
 function applyWaterLevel(){
@@ -202,13 +207,13 @@ export function eventInit() {
   window.addEventListener("wheel", (e) => {
     if (e.shiftKey) {
       state.zoom += e.deltaY > 0 ? -0.1 : 0.1;
-      state.zoom = Math.max(0.1, Math.min(4, state.zoom));
+      state.zoom = Math.max(0.05, Math.min(4, state.zoom));
       zoomSizeBar.textContent = `Zoom: ${state.zoom.toFixed(2)}`;
       return;
     }
 
-    state.brushRadius += e.deltaY > 0 ? -1 : 1;
-    state.brushRadius = Math.max(1, Math.min(80, state.brushRadius));
+    state.brushRadius += e.deltaY > 0 ? -2 : 2;
+    state.brushRadius = Math.max(1, Math.min(300, state.brushRadius));
     brushSizeBar.textContent = `Size: ${state.brushRadius}`;
   });
 
@@ -267,16 +272,16 @@ export function eventInit() {
     console.log("fileName:", paletteSettings.fileName);
   });
 
-  paletteSizeInput.addEventListener("input", (e) => {
+  paletteSizeInput.addEventListener("input", async (e) => {
     const newSize = parseInt(e.target.value) || 8;
-    resizeMap(newSize, newSize);
+    await resizeMap(newSize, newSize);
     console.log("palette resized:", newSize, "width:", state.widthLength, "height:", state.heightLength);
   });
   
-  maxHeightInput.addEventListener("input", (e) => {
+  maxHeightInput.addEventListener("input", async (e) => {
     const value = parseInt(e.target.value) || 64;
     state.maxHeight = value;
-    resizeHeight(value);
+    await resizeHeight(value);
     console.log("maxHeight:", state.maxHeight);
   });
 

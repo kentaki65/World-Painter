@@ -20,102 +20,124 @@ export function getTopBlock(x, z) {
   return state.blockMap[height][z][x];
 }
 
-export function resizeMap(newChunkX, newChunkZ) {
-  const oldCols = state.chunkCols;
-  const oldRows = state.chunkRows;
-
-  const newWidth = newChunkX * chunkSize;
-  const newHeight = newChunkZ * chunkSize;
-
-  const oldMap = state.map;
-  const oldBlockMap = state.blockMap;
-  const oldLayerMap = state.layerMap;
-
-  const newMap = Array.from({ length: newHeight }, (_, y) =>
-    Array.from({ length: newWidth }, (_, x) =>
-      (oldMap[y] && oldMap[y][x] !== undefined) ? oldMap[y][x] : 0
-    )
-  );
-
-  const newBlockMap = Array.from({ length: state.maxHeight }, (_, y) =>
-    Array.from({ length: newHeight }, (_, z) =>
-      Array.from({ length: newWidth }, (_, x) =>
-        (oldBlockMap[y] && oldBlockMap[y][z] && oldBlockMap[y][z][x] !== undefined)
-          ? oldBlockMap[y][z][x]
-          : 0
-      )
-    )
-  );
-
-  const newLayerMap = Array.from({ length: newHeight }, (_, y) =>
-    Array.from({ length: newWidth }, (_, x) =>
-      (oldLayerMap[y] && oldLayerMap[y][x] !== undefined)
-        ? oldLayerMap[y][x]
-        : null
-    )
-  );
-
-  state.chunkLenX = newChunkX;
-  state.chunkLenZ = newChunkZ;
-
-  state.map = newMap;
-  state.blockMap = newBlockMap;
-  state.layerMap = newLayerMap;
-
-  const newCols = Math.ceil(newWidth / chunkSize);
-  const newRows = Math.ceil(newHeight / chunkSize);
-
-  const newChunkCanvas = Array.from({ length: newRows }, (_, cy) =>
-    Array.from({ length: newCols }, (_, cx) => {
-      if (cy < oldRows && cx < oldCols) {
-        return state.chunkCanvas[cy][cx];
-      }
-      return null;
-    })
-  );
-
-  state.chunkCanvas = newChunkCanvas;
-  state.chunkCols = newCols;
-  state.chunkRows = newRows;
-
-  state.dirtyChunks.clear();
-
-  for (let cy = 0; cy < newRows; cy++) {
-    for (let cx = 0; cx < newCols; cx++) {
-      if (cy >= oldRows || cx >= oldCols) {
-        state.dirtyChunks.add(`${cx},${cy}`);
-      }
-    }
+export async function runLoading(fn){
+  showLoading();
+  await new Promise(r => setTimeout(r, 0));
+  try{
+    await fn();
+  } finally {
+    hideLoading();
   }
 }
 
-export function resizeHeight(newMaxHeight){
-  const old = state.blockMap;
-  const width = state.widthLength;
-  const height = state.heightLength;
+export async function resizeMap(newChunkX, newChunkZ) {
+  await runLoading(async () => {
 
-  const newMap3D = Array.from({ length: newMaxHeight }, (_, y) =>
-    Array.from({ length: height }, (_, z) =>
-      Array.from({ length: width }, (_, x) =>
-        old[y]?.[z]?.[x] ?? 0
+    const oldCols = state.chunkCols;
+    const oldRows = state.chunkRows;
+
+    const newWidth = newChunkX * chunkSize;
+    const newHeight = newChunkZ * chunkSize;
+
+    const oldMap = state.map;
+    const oldBlockMap = state.blockMap;
+    const oldLayerMap = state.layerMap;
+
+    const newMap = Array.from({ length: newHeight }, (_, y) =>
+      Array.from({ length: newWidth }, (_, x) =>
+        oldMap[y]?.[x] ?? 0
       )
-    )
-  );
+    );
 
-  for(let z = 0; z < height; z++){
-    for(let x = 0; x < width; x++){
-      if(state.map[z][x] >= newMaxHeight){
-        state.map[z][x] = newMaxHeight - 1;
+    const newBlockMap = Array.from({ length: state.maxHeight }, (_, y) =>
+      Array.from({ length: newHeight }, (_, z) =>
+        Array.from({ length: newWidth }, (_, x) =>
+          oldBlockMap[y]?.[z]?.[x] ?? 0
+        )
+      )
+    );
+
+    const newLayerMap = Array.from({ length: newHeight }, (_, y) =>
+      Array.from({ length: newWidth }, (_, x) =>
+        oldLayerMap[y]?.[x] ?? null
+      )
+    );
+
+    state.chunkLenX = newChunkX;
+    state.chunkLenZ = newChunkZ;
+
+    state.map = newMap;
+    state.blockMap = newBlockMap;
+    state.layerMap = newLayerMap;
+
+    const newCols = Math.ceil(newWidth / chunkSize);
+    const newRows = Math.ceil(newHeight / chunkSize);
+
+    const newChunkCanvas = Array.from({ length: newRows }, (_, cy) =>
+      Array.from({ length: newCols }, (_, cx) =>
+        (cy < oldRows && cx < oldCols)
+          ? state.chunkCanvas[cy][cx]
+          : null
+      )
+    );
+
+    state.chunkCanvas = newChunkCanvas;
+    state.chunkCols = newCols;
+    state.chunkRows = newRows;
+
+    state.dirtyChunks.clear();
+
+    for (let cy = 0; cy < newRows; cy++) {
+      for (let cx = 0; cx < newCols; cx++) {
+        if (cy >= oldRows || cx >= oldCols) {
+          state.dirtyChunks.add(`${cx},${cy}`);
+        }
       }
     }
-  }
 
-  state.maxHeight = newMaxHeight;
-  state.blockMap = newMap3D;
+  });
+}
 
-  for(let cy = 0; cy < state.chunkRows; cy++){
-    for(let cx = 0; cx < state.chunkCols; cx++){
-      state.dirtyChunks.add(`${cx},${cy}`);
+export async function resizeHeight(newMaxHeight){
+  await runLoading(async () => {
+
+    const old = state.blockMap;
+    const width = state.widthLength;
+    const height = state.heightLength;
+
+    const newMap3D = Array.from({ length: newMaxHeight }, (_, y) =>
+      Array.from({ length: height }, (_, z) =>
+        Array.from({ length: width }, (_, x) =>
+          old[y]?.[z]?.[x] ?? 0
+        )
+      )
+    );
+
+    // 高さクランプ
+    for(let z = 0; z < height; z++){
+      for(let x = 0; x < width; x++){
+        if(state.map[z][x] >= newMaxHeight){
+          state.map[z][x] = newMaxHeight - 1;
+        }
+      }
     }
-  }
+
+    state.maxHeight = newMaxHeight;
+    state.blockMap = newMap3D;
+
+    for(let cy = 0; cy < state.chunkRows; cy++){
+      for(let cx = 0; cx < state.chunkCols; cx++){
+        state.dirtyChunks.add(`${cx},${cy}`);
+      }
+    }
+
+  });
+}
+
+export function showLoading() {
+  document.getElementById("loadingOverlay").style.display = "flex";
+}
+
+export function hideLoading() {
+  document.getElementById("loadingOverlay").style.display = "none";
 }
