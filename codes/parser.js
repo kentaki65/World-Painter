@@ -237,16 +237,21 @@ const splitBloxdschem = function (json) {
     sliceSize
   };
 };
-function downloadSchems(result) {
+async function downloadSchems(result) {
+	const zip = new JSZip();
 	result.schems.forEach((bin, i) => {
-		const blob = new Blob([bin], { type: "application/octet-stream" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `${state.fileName || "schem"}${i}.bloxdschem`;
-		a.click();
-		URL.revokeObjectURL(url);
+		const fileName = `${state.fileName || "schem"}${i}.bloxdschem`;
+		zip.file(fileName, bin);
 	});
+
+	const content = await zip.generateAsync({ type: "blob" });
+	const url = URL.createObjectURL(content);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = `${state.fileName || "schems"}.zip`;
+	a.click();
+
+	URL.revokeObjectURL(url);
 }
 
 const write = function (json) {

@@ -255,11 +255,11 @@ export function eventInit() {
     state.layerMap = layerMapInit();
   });
 
-  exportInput.addEventListener("click", () => {
+  exportInput.addEventListener("click", async () => {
     growForest(state, treesStructures.pine, 6); 
     const json = convertChunks(state);
     const result = writeBloxdSchem(json);
-    downloadSchems(result);
+    await downloadSchems(result);
   });
 
   fileNameInput.addEventListener("input", (e) => {
