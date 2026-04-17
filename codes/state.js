@@ -62,7 +62,7 @@ export const state = {
   blockMap: null,
   layerMap: null,
   fileName: "schem",
-  waterLevel: 10,
+  waterLevel: 0,
 
   // 編集系
   leftDown: false,
@@ -100,6 +100,11 @@ export const brushState = {
 
   brushType: "default",
   loadedBrushes: null,
+  blockLayers: [
+    { depth: 1, block: 4 }, // 表面（Grass）
+    { depth: 3, block: 2 }, // 土
+    { depth: Infinity, block: 28 } // 石
+  ]
 };
 
 export function initChunks(){

@@ -1,5 +1,5 @@
 import { state, brushState, chunkSize, cellSize } from "./state.js";
-import { heightClamp, lerp } from "./utils.js";
+import { heightClamp, lerp, applyColumnChanges } from "./utils.js";
 import { nameToId } from "./nameMap.js";
 
 function markDirtyArea(cx, cy, r){
@@ -17,36 +17,10 @@ function markDirtyArea(cx, cy, r){
   }
 }
 
-// ブロック更新関数
-function updateBlockData(x, z, oldH, newH) {
-  const oldY = Math.floor(oldH);
-  const newY = Math.floor(newH);
-
-  if (brushState.atOrAboveEnabled && newY < brushState.orAboveRangeInput) return;
-  if (brushState.atOrBelowEnabled && newY > brushState.atOrBelowRangeInput) return;
-
-  if (newY > oldY) {
-    for (let y = oldY + 1; y <= newY; y++) {
-      if (y >= state.maxHeight) break;
-      if (y === 0) continue;
-
-      if (brushState.onlyBlockEnabled && state.blockMap[y - 1][z][x] !== nameToId[brushState.onlyBlockInput]) continue;
-
-      if (y === newY) {
-        state.blockMap[y][z][x] = nameToId["Grass Block"];
-      }
-    }
-  } else if (newY < oldY) {
-    for (let y = newY + 1; y <= oldY; y++) {
-      if (y >= state.maxHeight) break;
-      state.blockMap[y][z][x] = 0;
-    }
-  }
-}
-
 // 通常ブラシ
 function normalBrush(cellX, cellY, intensity){
   const r = state.brushRadius;
+  const changed = new Set();
 
   // カスタムブラシ取得（default以外なら使う）
   const brushData = (brushState.brushType !== "default") 
@@ -96,47 +70,57 @@ function normalBrush(cellX, cellY, intensity){
 
       const newY = Math.floor(newH);
       state.map[y][x] = newH;
-      updateBlockData(x, y, oldH, newH);
+      changed.add(`${x},${y}`);
 
       const ccx = (x / chunkSize)|0;
       const ccy = (y / chunkSize)|0;
       state.dirtyChunks.add(`${ccx},${ccy}`);
     }
   }
+  applyColumnChanges(changed);
 }
 
 // 平滑ブラシ
 function smoothBrush(cellX, cellY){
   const r = state.brushRadius;
+  const changed = new Set();
+
   for(let dy=-r; dy<=r; dy++){
     for(let dx=-r; dx<=r; dx++){
       const x = cellX + dx;
       const y = cellY + dy;
+
       if(x<1||y<1||x>=state.widthLength-1||y>=state.heightLength-1) continue;
       if(dx*dx+dy*dy>r*r) continue;
 
       const oldH = state.map[y][x];
-      const avg = (oldH + state.map[y][x-1] + state.map[y][x+1] + state.map[y-1][x] + state.map[y+1][x]) / 5;
-      const strength = 0.2 * (1 - (dx*dx + dy*dy)/(r*r));
+
+      const avg = (
+        oldH +
+        state.map[y][x-1] +
+        state.map[y][x+1] +
+        state.map[y-1][x] +
+        state.map[y+1][x]
+      ) / 5;
+
+      const strength = 0.5 * (1 - (dx*dx + dy*dy)/(r*r));
       let newH = heightClamp(lerp(oldH, avg, strength));
 
-      // 高さ制限
       if(brushState.atOrAboveEnabled && newH < brushState.orAboveRangeInput) continue;
       if(brushState.atOrBelowEnabled && newH > brushState.atOrBelowRangeInput) continue;
 
       state.map[y][x] = newH;
-      //updateBlockData(x, y, oldH, newH);
-
-      const ccx = (x / chunkSize)|0;
-      const ccy = (y / chunkSize)|0;
-      state.dirtyChunks.add(`${ccx},${ccy}`);
+      changed.add(`${x},${y}`);
     }
   }
+  applyColumnChanges(changed);
 }
 
 // スプレーブラシ（上書き）
 function sprayBrush(cellX, cellY){
   const density = state.brushRadius * 3;
+  const changed = new Set();
+
   for(let i=0; i<density; i++){
     const angle = Math.random()*Math.PI*2;
     const radius = Math.sqrt(Math.random())*state.brushRadius;
@@ -146,24 +130,19 @@ function sprayBrush(cellX, cellY){
 
     const x = cellX + dx;
     const z = cellY + dz;
+
     if(x<0||z<0||x>=state.widthLength||z>=state.heightLength) continue;
     if(!state.leftDown) continue;
 
     const oldH = state.map[z][x];
-    const yTop = Math.ceil(oldH)-1;
 
-    // 高さ制限
-    if(brushState.atOrAboveEnabled && yTop < brushState.orAboveRangeInput) continue;
-    if(brushState.atOrBelowEnabled && yTop > brushState.atOrBelowRangeInput) continue;
-    if(yTop<0 || yTop>=state.maxHeight) continue;
+    const newH = heightClamp(oldH);
 
-    // onlyBlockはupdateBlockDataで考慮する
-    state.blockMap[yTop][z][x] = nameToId[state.selectedBlock];
-
-    const ccx = (x / chunkSize)|0;
-    const ccy = (z / chunkSize)|0;
-    state.dirtyChunks.add(`${ccx},${ccy}`);
+    state.map[z][x] = newH;
+    changed.add(`${x},${z}`);
   }
+
+  applyColumnChanges(changed);
 }
 
 function layerBrush(cellX, cellY) { 

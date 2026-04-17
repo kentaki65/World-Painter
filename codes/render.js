@@ -114,7 +114,20 @@ function renderChunk(cx, cy){
 
       ctx.fillStyle = getColor(blockName);
       ctx.fillRect(px, py, size, size);
-      
+
+      const hLeft = state.map[y][x-1] ?? h;
+      const hUp = state.map[y-1]?.[x] ?? h;
+
+      const shadowStrength = Math.max(
+        hLeft - h,
+        hUp - h
+      );
+
+      if (shadowStrength > 0) {
+        ctx.fillStyle = `rgba(0,0,0,${Math.min(0.6, shadowStrength * 0.08)})`;
+        ctx.fillRect(px, py, size, size);
+      }
+
       if(isUnderWater){
         ctx.fillStyle = "rgba(135,206,235,0.5)";
         ctx.fillRect(px, py, size, size);

@@ -1,4 +1,4 @@
-import { state, chunkSize } from "./state.js";
+import { state, chunkSize, brushState } from "./state.js";
 
 export const clamp = (v) => {
   return Math.max(0, Math.min(255, v));
@@ -132,6 +132,43 @@ export async function resizeHeight(newMaxHeight){
     }
 
   });
+}
+
+export function rebuildColumn(x, y, height){
+  const topY = Math.floor(height);
+
+  let currentDepth = 0;
+  let layerIndex = 0;
+  let layerRemaining = brushState.blockLayers [0].depth;
+
+  for(let yy = topY; yy >= 0; yy--){
+    if(layerRemaining <= 0){
+      layerIndex++;
+      layerRemaining = brushState.blockLayers [layerIndex]?.depth ?? Infinity;
+    }
+
+    const layer = brushState.blockLayers [layerIndex];
+    state.blockMap[yy][y][x] = layer.block;
+
+    layerRemaining--;
+    currentDepth++;
+  }
+
+  for(let yy = topY + 1; yy < brushState.maxHeight; yy++){
+    state.blockMap[yy][y][x] = 0;
+  }
+}
+
+export function applyColumnChanges(changed){
+  for (const key of changed) {
+    const [x, y] = key.split(",").map(Number);
+
+    rebuildColumn(x, y, state.map[y][x]);
+
+    const ccx = (x / chunkSize)|0;
+    const ccy = (y / chunkSize)|0;
+    state.dirtyChunks.add(`${ccx},${ccy}`);
+  }
 }
 
 export function showLoading() {
