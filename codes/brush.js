@@ -139,6 +139,7 @@ function sprayBrush(cellX, cellY){
     const newH = heightClamp(oldH);
 
     state.map[z][x] = newH;
+    state.topBlockMap[z][x] = nameToId[state.selectedBlock];
     changed.add(`${x},${z}`);
   }
 

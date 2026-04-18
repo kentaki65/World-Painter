@@ -104,7 +104,12 @@ function renderChunk(cx, cy){
 
       const h = row[x] | 0;
       const blockY = h < state.maxHeight ? h : state.maxHeight - 1;
-      const blockId = state.blockMap[blockY]?.[y]?.[x] ?? 0;
+      const topY = Math.floor(state.map[y][x]);
+
+      const blockId =
+        state.topBlockMap[y]?.[x] ??
+        state.blockMap[topY]?.[y]?.[x] ??
+        0;
 
       const blockName = idToName[blockId] ?? "Air";
 

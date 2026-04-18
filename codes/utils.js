@@ -135,27 +135,30 @@ export async function resizeHeight(newMaxHeight){
 }
 
 export function rebuildColumn(x, y, height){
-  const topY = Math.floor(height);
+  const safeTop = Math.min(state.maxHeight - 1, Math.floor(height));
 
-  let currentDepth = 0;
   let layerIndex = 0;
-  let layerRemaining = brushState.blockLayers [0].depth;
+  let remaining = brushState.blockLayers[0].depth;
 
-  for(let yy = topY; yy >= 0; yy--){
-    if(layerRemaining <= 0){
+  for(let yy = safeTop; yy >= 0; yy--){
+    if(remaining <= 0){
       layerIndex++;
-      layerRemaining = brushState.blockLayers [layerIndex]?.depth ?? Infinity;
+      remaining = brushState.blockLayers[layerIndex]?.depth ?? Infinity;
     }
 
-    const layer = brushState.blockLayers [layerIndex];
+    const layer = brushState.blockLayers[layerIndex];
     state.blockMap[yy][y][x] = layer.block;
 
-    layerRemaining--;
-    currentDepth++;
+    remaining--;
   }
 
-  for(let yy = topY + 1; yy < brushState.maxHeight; yy++){
+  for(let yy = safeTop + 1; yy < state.maxHeight; yy++){
     state.blockMap[yy][y][x] = 0;
+  }
+
+  const override = state.topBlockMap[y]?.[x];
+  if (override !== null && override !== undefined) {
+    state.blockMap[safeTop][y][x] = override;
   }
 }
 

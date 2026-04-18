@@ -6,7 +6,8 @@ import {
   mapInit,
   blockMapInit,
   layerMapInit,
-  treesStructures
+  treesStructures,
+  topBlockMap
 } from "./state.js";
 
 import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
@@ -258,6 +259,7 @@ export function eventInit() {
     state.map = mapInit();
     state.blockMap = blockMapInit();
     state.layerMap = layerMapInit();
+    state.topBlockMap = topBlockMap();
   });
 
   exportInput.addEventListener("click", async () => {

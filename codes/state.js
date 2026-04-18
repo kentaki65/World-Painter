@@ -61,6 +61,7 @@ export const state = {
   map: null,
   blockMap: null,
   layerMap: null,
+  topBlockMap: null,
   fileName: "schem",
   waterLevel: 0,
 
@@ -141,8 +142,16 @@ export const layerMapInit = () =>
     new Array(state.widthLength).fill(null)
   );
 
+export const topBlockMap = () => 
+  Array.from({ length: state.heightLength }, () =>
+    new Array(state.widthLength).fill(null)
+  );
+
+
 export function initMaps() {
   state.map = mapInit();
   state.blockMap = blockMapInit();
   state.layerMap = layerMapInit();
+  state.topBlockMap = topBlockMap();
+  console.log(state.topBlockMap);
 }
