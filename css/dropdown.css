@@ -1,0 +1,42 @@
+.dropdownMenu {
+  display: none;
+  width: max-content;
+  position: absolute;
+  top: 100%;
+}
+
+.dropdownButton {
+  width: max-content;
+  border: none;
+}
+
+.option {
+  margin-right: 10px; 
+  position: relative;
+}
+
+.dropdownButton:hover, .attached:hover{
+  cursor: pointer;
+  background-color: chocolate;
+  border: 2px solid gray;
+}
+
+.attached {
+  border: 0;
+}
+
+.option:hover > .dropdownMenu{
+  display: flex;
+  flex-direction: column;
+  padding: 3px;
+  border: 2px solid gray;
+  background-color: white;
+}
+
+.dropdown {
+  display: flex;
+  color: white;
+  border: 2px solid gray;
+  background-color: gray;
+  border-radius: 2px;
+}

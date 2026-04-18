@@ -2,14 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script type="module" src="./codes/main.js"></script>
-  <link rel="stylesheet" href="styles.css">
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-  />
+
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="./css/dropdown.css">
+  <link rel="stylesheet" href="./css/underbar.css">
+  <link rel="stylesheet" href="./css/settings.css">
+  <link rel="stylesheet" href="./css/tools.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <title>Document</title>
 </head>
 <body>
@@ -42,6 +46,9 @@
         </div>
       </div>
     </div>
+    <div>
+      a
+    </div>
     <div class="viewer">
       <div class="toolsColumn">
         <div class="labels">tools</div>
@@ -50,76 +57,43 @@
             <i class="fa-solid fa-spray-can"></i>
           </button>
           <button class="Button" title="height: raise or lower the terrain" id="height">
-            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+            <div class="buttonStr">⇅</div>
           </button>
           <button class="Button" title="flatten: flatten an area" id="flatten">
-            <i class="fa-solid fa-arrow-down-up-across-line"></i>
+            <div class="buttonStr">⤳</div>
           </button>
           <button class="Button" title="smooth: smooth the terrain out" id="smooth">
-            <i class="fa-solid fa-arrows-to-circle"></i>
+            <div class="buttonStr">⤵</div>
           </button>
           <button class="Button" id="layerPaint">
             <i class="fa-solid fa-layer-group"></i>
           </button>
         </div>
-        <div class="labels">layers</div>
-        <div class="layerUI">
-          <button class="Button" title="Delicious Forest: Generate Delicious Forest" id="layerDeliciousForest">
-            <i class="fa-solid fa-tree"></i>Delicious Forest
-          </button>
-          <button class="Button" title="Pine: Generate pine forest" id="layerPineForest">
-            <i class="fa-solid fa-tree"></i>Pine
-          </button>
-        </div>
-        <div class="labels">blocks</div>
-        <div class="blocksUI">
-          <button class="BlockButton" title="dirt" id="blockDirt">
-            <img src="blocksIcon/Dirt.webp" width="24">
-          </button>
-          <button class="BlockButton" title="grass" id="blockGrass Block">
-            <img src="blocksIcon/Grass_Block.webp" width="24">
-          </button>
-          <button class="BlockButton" title="sand" id="blockSand">
-            <img src="blocksIcon/sand.webp" width="24">
-          </button>
-          <button class="BlockButton" title="stone" id="blockStone">
-            <img src="blocksIcon/Stone.webp" width="24">
-          </button>
-          <button class="BlockButton" title="messyStone" id="blockMessyStone">
-            <img src="blocksIcon/Messy_Stone.webp" width="24">
-          </button>
-          <button class="BlockButton" title="gravel" id="blockGravel">
-            <img src="blocksIcon/Gravel.webp" width="24">
-          </button>
-          <button class="BlockButton" title="clay" id="blockClay">
-            <img src="blocksIcon/Clay.webp" width="24">
-          </button>
-          <button class="BlockButton" title="andesite" id="blockAndesite">
-            <img src="blocksIcon/Andesite.webp" width="24">
-          </button>
-          <button class="BlockButton" title="diorite" id="blockDiorite">
-            <img src="blocksIcon/Diorite.webp" width="24">
-          </button>
-          <button class="BlockButton" title="granite" id="blockGranite">
-            <img src="blocksIcon/Granite.webp" width="24">
-          </button>
-          <button class="BlockButton" title="snow" id="blockSnow">
-            <img src="blocksIcon/Snow.png" width="24">
-          </button>
-        </div>
-        <div class="sliders">
-          <div class="labels">settings</div>
-          <label for="fileName">fileName</label>
-          <input type="text" id="volume" name="fileName" placeholder="File name"/>
-          <label>
-            palette Size: <input type="number" id="paletteSize" value="4" min="1">
-          </label>
-          <label>
-            max Height: <input type="number" id="maxHeight" value="64" min="32">
-          </label>
-          <label>
-            Water level Height: <input type="number" id="waterLevelHeight" value="0" min="0">
-          </label>
+        <div class="toolBox">
+          <div class="toolTabs">
+            <div class="tab">
+              <button type="button">Layers</button>
+            </div>
+            <div class="tab">
+              <button type="button">Terrain</button>
+            </div>
+          </div>
+          <div class="toolColumn">
+            <div class="toolName">Layers</div>
+            <div class="columnWrap">
+              <div class="hideOption">
+                <span>Show</span>
+                <span>Solo</span>
+              </div>
+              <div class="toolContent">
+                <div class="toolTypes">
+                  <input type="checkbox">
+                  <input type="checkbox">
+                  草☘️
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <canvas id="canvas"></canvas>

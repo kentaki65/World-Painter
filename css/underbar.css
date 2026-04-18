@@ -1,0 +1,28 @@
+.underbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  height: 30px;
+  padding: 0 12px;
+
+  background-color: #eee;
+  border-top: 2px solid gray;
+
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.underbar > .child {
+  flex: 0 0 auto;
+  padding: 0 8px;
+
+  border-right: 1px solid gray;
+  white-space: nowrap;
+}

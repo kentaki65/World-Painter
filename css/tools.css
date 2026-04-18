@@ -1,0 +1,76 @@
+/*ツールボックス*/
+.toolBox {
+  height: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  padding-top: 10px;
+}
+
+.toolTabs {
+  display: flex;
+  writing-mode: vertical-lr;
+  text-orientation: sideways;
+}
+
+.tab {
+  padding: 5px 0 5px 0;
+  border: 1px solid gray;
+  border-radius: 10px 0 0 10px;
+}
+
+.tab button {
+  border: none;
+  background-color: transparent;
+  font-weight: bold;
+}
+
+.tab:hover, .tab:hover button {
+  background-color: orange;
+}
+
+.toolColumn {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  border: 2px solid black;
+  background-color: orange;
+  position: relative;
+  overflow: hidden;
+}
+
+.toolColumn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.6),
+    rgba(255,255,255,0.2) 2%,
+    rgba(255,255,255,0) 5%
+  );
+
+  pointer-events: none;
+}
+
+.columnWrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  transform: scale(0.95);
+  background-color: white;
+  padding: 5px;
+}
+
+.toolName {
+  font-weight: bold;
+}
+
+.hideOption {
+  display: flex;
+  flex-direction: column;
+  writing-mode: vertical-lr;
+  text-orientation: sideways;
+}
