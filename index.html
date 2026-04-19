@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./css/underbar.css">
   <link rel="stylesheet" href="./css/settings.css">
   <link rel="stylesheet" href="./css/tools.css">
+  <link rel="stylesheet" href="./css/loading.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <title>Document</title>
@@ -46,9 +47,6 @@
         </div>
       </div>
     </div>
-    <div>
-      a
-    </div>
     <div class="viewer">
       <div class="toolsColumn">
         <div class="labels">tools</div>
@@ -72,15 +70,18 @@
         <div class="toolBox">
           <div class="toolTabs">
             <div class="tab">
-              <button type="button">Layers</button>
+              <button type="button" id="layertab">Layers</button>
             </div>
             <div class="tab">
-              <button type="button">Terrain</button>
+              <button type="button" id="terraintab">Terrain</button>
+            </div>
+            <div class="tab">
+              <button type="button" id="advancedtab">Advanced Setting</button>
             </div>
           </div>
           <div class="toolColumn">
-            <div class="toolName">Layers</div>
-            <div class="columnWrap">
+            <div class="toolName" id="toolName">Layers</div>
+            <div class="columnWrap" id="layerContent">
               <div class="hideOption">
                 <span>Show</span>
                 <span>Solo</span>
@@ -90,6 +91,74 @@
                   <input type="checkbox">
                   <input type="checkbox">
                   草☘️
+                </div>
+              </div>
+            </div>
+            <div class="columnWrap hidden" id="terrainContent">
+              <div class="toolContent">
+                <div class="toolTypes">
+                  <div class="blocksUI">
+                    <button class="BlockButton" title="dirt" id="blockDirt">
+                      <img src="blocksIcon/Dirt.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="grass" id="blockGrass Block">
+                      <img src="blocksIcon/Grass_Block.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="sand" id="blockSand">
+                      <img src="blocksIcon/sand.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="stone" id="blockStone">
+                      <img src="blocksIcon/Stone.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="messyStone" id="blockMessyStone">
+                      <img src="blocksIcon/Messy_Stone.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="gravel" id="blockGravel">
+                      <img src="blocksIcon/Gravel.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="clay" id="blockClay">
+                      <img src="blocksIcon/Clay.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="andesite" id="blockAndesite">
+                      <img src="blocksIcon/Andesite.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="diorite" id="blockDiorite">
+                      <img src="blocksIcon/Diorite.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="granite" id="blockGranite">
+                      <img src="blocksIcon/Granite.webp" width="24">
+                    </button>
+                    <button class="BlockButton" title="snow" id="blockSnow">
+                      <img src="blocksIcon/Snow.png" width="24">
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="columnWrap hidden" id="advancedContent">
+              <div class="toolContent">
+                <div class="toolTypes">
+                  <div class="sliders">
+                    <div class="field">
+                      <label for="fileName">File name</label>
+                      <input type="text" id="volume" placeholder="File name" />
+                    </div>
+
+                    <div class="field">
+                      <label for="paletteSize">Palette size</label>
+                      <input type="number" id="paletteSize" value="4" min="1">
+                    </div>
+
+                    <div class="field">
+                      <label for="maxHeight">Max height</label>
+                      <input type="number" id="maxHeight" value="64" min="32">
+                    </div>
+
+                    <div class="field">
+                      <label for="waterLevelHeight">Water level</label>
+                      <input type="number" id="waterLevelHeight" value="0" min="0">
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -36,11 +36,6 @@ canvas {
   border-left: 2px solid gray;     
 }
 
-.labels {
-  padding: 5px;
-  font-weight: bold;
-}
-
 .toolsUi, .blocksUI, .brushUI{
   display: flex;
   flex-wrap: wrap;
@@ -65,11 +60,7 @@ canvas {
 }
 
 .BlockButton {
-  flex: 0 0 calc(20% - 5px); 
-  height: 40px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  flex: 1 0 20%;
 }
 
 .viewer canvas{
@@ -78,5 +69,5 @@ canvas {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }

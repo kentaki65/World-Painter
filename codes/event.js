@@ -67,6 +67,19 @@ const waterLevelInput = document.getElementById("waterLevelHeight");
 
 const restoreDefault = document.getElementById("restoreDefault");
 
+const layerTab = document.getElementById("layertab");
+const terrainTab = document.getElementById("terraintab");
+const advancedTab = document.getElementById("advancedtab");
+
+const layerContent = document.getElementById("layerContent");
+const terrainContent = document.getElementById("terrainContent");
+const advancedSetting = document.getElementById("advancedContent");
+
+const tabs = [layerTab, terrainTab, advancedTab];
+const contents = [layerContent, terrainContent, advancedSetting];
+
+const toolName = document.getElementById("toolName");
+
 function changeMode(e) {
   const name = e.currentTarget.id;
   state.mode = name;
@@ -177,6 +190,16 @@ function applyWaterLevel(){
   }
 }
 
+function switchTab(activeTab, activeContent) {
+  // 全部リセット
+  tabs.forEach(tab => tab.classList.remove("tab--active"));
+  contents.forEach(content => content.classList.add("hidden"));
+
+  // 選択だけ有効化
+  activeTab.classList.add("tab--active");
+  activeContent.classList.remove("hidden");
+}
+
 export function eventInit() {
   canvas.addEventListener("mousedown", (e) => {
     if (e.button === 0) {
@@ -240,11 +263,25 @@ export function eventInit() {
     document.getElementById(id).addEventListener("click", changeMode);
   });
 
-  document.addEventListener("DOMContentLoaded", () => {
-    ["layerFrost", "layerDeliciousForest", "layerPineForest"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener("click", changeSelectLayer);
-    });
+  //森一つに統一したい
+  ["layerFrost", "layerDeliciousForest", "layerPineForest"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", changeSelectLayer);
+  });
+
+  layerTab.addEventListener("click", () => {
+    toolName.textContent = "layer";
+    switchTab(layerTab, layerContent);
+  });
+
+  terrainTab.addEventListener("click", () => {
+    toolName.textContent = "terrain";
+    switchTab(terrainTab, terrainContent);
+  });
+
+  advancedTab.addEventListener("click", () => {
+    toolName.textContent = "advancedSetting";
+    switchTab(advancedTab, advancedSetting);
   });
 
   Object.keys(blockColors).forEach(name => {
