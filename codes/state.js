@@ -96,6 +96,8 @@ export const brushState = {
   orAboveRangeInput: 0,         // number input 初期値 0
   atOrBelowEnabled: false,      // チェックボックスは初期オフ
   atOrBelowRangeInput: 0,       // number input 初期値 0
+  onlyBlockEnabled: false,      // チェックボックスは初期オフ
+  onlyBlockInput: "Dirt",       // テキスト入力の初期値
 
   brushType: "default",
   loadedBrushes: null,
@@ -109,7 +111,7 @@ export const brushState = {
 export const stackState = {
   undoStack: [],
   redoStack: [],
-  MAX_HISTORY: 50,
+  MAX_HISTORY: 10,
 };
 
 export function initChunks(){

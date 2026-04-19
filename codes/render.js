@@ -20,7 +20,31 @@ function getColor(blockName) {
   colorCache.set(blockName, color);
   return color;
 }
+
 const colorCache = new Map();
+
+export function updateBlockMap() {
+  const newMap = Array.from({ length: state.maxHeight }, () =>
+    Array.from({ length: state.heightLength }, () =>
+      new Array(state.widthLength).fill(0)
+    )
+  );
+
+  for (let z = 0; z < state.heightLength; z++) {
+    for (let x = 0; x < state.widthLength; x++) {
+      const h = Math.floor(state.map[z][x]);
+      for (let y = 0; y <= h && y < state.maxHeight; y++) {
+        if (state.blockMap[y][z][x] === 0) {
+          newMap[y][z][x] = 4;
+        } else {
+          newMap[y][z][x] = state.blockMap[y][z][x];
+        }
+      }
+    }
+  }
+
+  state.blockMap = newMap;
+}
 
 function drawBrushPreview(canvas){ 
   const ctx = canvas.getContext("2d"); 

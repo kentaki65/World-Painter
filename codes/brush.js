@@ -1,6 +1,21 @@
 import { state, brushState, chunkSize, cellSize } from "./state.js";
-import { heightClamp, lerp, setCell } from "./utils.js";
+import { heightClamp, lerp, applyColumnChanges, saveHistory } from "./utils.js";
 import { nameToId } from "./nameMap.js";
+
+function markDirtyArea(cx, cy, r){
+  const minX = Math.max(0, cx - r);
+  const maxX = Math.min(state.widthLength - 1, cx + r);
+  const minY = Math.max(0, cy - r);
+  const maxY = Math.min(state.heightLength - 1, cy + r);
+
+  for(let y = minY; y <= maxY; y += chunkSize){
+    for(let x = minX; x <= maxX; x += chunkSize){
+      const ccx = (x / chunkSize) | 0;
+      const ccy = (y / chunkSize) | 0;
+      state.dirtyChunks.add(`${ccx},${ccy}`);
+    }
+  }
+}
 
 // 通常ブラシ
 function normalBrush(cellX, cellY, intensity){
@@ -53,7 +68,8 @@ function normalBrush(cellX, cellY, intensity){
       if(brushState.atOrAboveEnabled && newH < brushState.orAboveRangeInput) continue;
       if(brushState.atOrBelowEnabled && newH > brushState.atOrBelowRangeInput) continue;
 
-      setCell(x, y, newH);
+      const newY = Math.floor(newH);
+      state.map[y][x] = newH;
       changed.add(`${x},${y}`);
 
       const ccx = (x / chunkSize)|0;
@@ -61,6 +77,7 @@ function normalBrush(cellX, cellY, intensity){
       state.dirtyChunks.add(`${ccx},${ccy}`);
     }
   }
+  applyColumnChanges(changed);
 }
 
 // 平滑ブラシ
@@ -92,10 +109,11 @@ function smoothBrush(cellX, cellY){
       if(brushState.atOrAboveEnabled && newH < brushState.orAboveRangeInput) continue;
       if(brushState.atOrBelowEnabled && newH > brushState.atOrBelowRangeInput) continue;
 
-      setCell(x, y, newH);
+      state.map[y][x] = newH;
       changed.add(`${x},${y}`);
     }
   }
+  applyColumnChanges(changed);
 }
 
 // スプレーブラシ（上書き）
@@ -120,10 +138,12 @@ function sprayBrush(cellX, cellY){
 
     const newH = heightClamp(oldH);
 
-    setCell(x, z, newH);
+    state.map[z][x] = newH;
     state.topBlockMap[z][x] = nameToId[state.selectedBlock];
     changed.add(`${x},${z}`);
   }
+
+  applyColumnChanges(changed);
 }
 
 function layerBrush(cellX, cellY) { 
@@ -180,6 +200,7 @@ export function applyBrush() {
       layerBrush(cellX, cellY);
       break;
     default:
+      markDirtyArea(cellX, cellY, state.brushRadius);
       normalBrush(cellX, cellY);
   }
 }
