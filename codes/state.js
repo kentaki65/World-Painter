@@ -109,7 +109,7 @@ export const brushState = {
 export const stackState = {
   undoStack: [],
   redoStack: [],
-  MAX_HISTORY: 10,
+  MAX_HISTORY: 50,
 };
 
 export function initChunks(){

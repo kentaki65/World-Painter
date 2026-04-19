@@ -11,7 +11,7 @@ import {
 } from "./state.js";
 
 import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
-import { resizeMap, resizeHeight, hideLoading, showLoading, redrawAllChunks, undo, redo, saveHistory} from "./utils.js";
+import { resizeMap, resizeHeight, hideLoading, showLoading, undo, redo, beginStroke, endStroke, recordChange } from "./utils.js";
 
 const brushImages = [
   "Circle Mountain 2.webp",
@@ -89,6 +89,7 @@ const contents2 = [brushContent, optionsContent];
 const toolName = document.getElementById("toolName");
 const toolName2 = document.getElementById("toolName2");
 
+let strokeActive = false;
 function changeMode(e) {
   const name = e.currentTarget.id;
   state.mode = name;
@@ -223,9 +224,12 @@ function switchTab2(activeTab, activeContent) {
 
 export function eventInit() {
   canvas.addEventListener("mousedown", (e) => {
-    setTimeout(saveHistory, 0);
     if (e.button === 0) {
       state.leftDown = true;
+
+      strokeActive = true;
+      beginStroke(); // ★ここ
+
       if (state.mode === "flatten") {
         const size = cellSize * state.zoom;
         const cellX = Math.floor((e.offsetX - state.camX) / size);
@@ -233,19 +237,28 @@ export function eventInit() {
         state.targetHeight = state.map[cellY][cellX];
       }
     }
+
     if (e.button === 1) {
       state.panning = true;
       state.panStartX = e.clientX;
       state.panStartY = e.clientY;
     }
+
     if (e.button === 2) state.rightDown = true;
   });
 
   window.addEventListener("mouseup", (e) => {
     if (e.button === 0) {
       if (state.mode === "flatten") state.targetHeight = null;
+
       state.leftDown = false;
+
+      if (strokeActive) {
+        strokeActive = false;
+        endStroke(); // ★ここ
+      }
     }
+
     if (e.button === 1) state.panning = false;
     if (e.button === 2) state.rightDown = false;
   });
@@ -333,7 +346,11 @@ export function eventInit() {
     state.blockMap = blockMapInit();
     state.layerMap = layerMapInit();
     state.topBlockMap = topBlockMap();
-    redrawAllChunks();
+    for(let cy = 0; cy < state.chunkRows; cy++){
+      for(let cx = 0; cx < state.chunkCols; cx++){
+        state.dirtyChunks.add(`${cx},${cy}`);
+      }
+    }
   });
 
   exportInput.addEventListener("click", async () => {

@@ -63,12 +63,21 @@ export async function resizeMap(newChunkX, newChunkZ) {
       )
     );
 
+    const newTopBlockMap = Array.from({ length: newHeight }, (_, z) =>
+      Array.from({ length: newWidth }, (_, x) =>
+        oldMap[z]?.[x] != null
+          ? state.topBlockMap[z]?.[x] ?? 4
+          : 4
+      )
+    );
+
     state.chunkLenX = newChunkX;
     state.chunkLenZ = newChunkZ;
 
     state.map = newMap;
     state.blockMap = newBlockMap;
     state.layerMap = newLayerMap;
+    state.topBlockMap = newTopBlockMap;
 
     const newCols = Math.ceil(newWidth / chunkSize);
     const newRows = Math.ceil(newHeight / chunkSize);
@@ -135,30 +144,41 @@ export async function resizeHeight(newMaxHeight){
 }
 
 export function rebuildColumn(x, y, height){
-  const safeTop = Math.min(state.maxHeight - 1, Math.floor(height));
+  const column = state.blockMap;
+  const safeTop = Math.min(state.maxHeight - 1, height | 0);
 
   let layerIndex = 0;
   let remaining = brushState.blockLayers[0].depth;
+  let currentBlock = brushState.blockLayers[0].block;
 
+  // 下方向
   for(let yy = safeTop; yy >= 0; yy--){
     if(remaining <= 0){
       layerIndex++;
-      remaining = brushState.blockLayers[layerIndex]?.depth ?? Infinity;
+      const next = brushState.blockLayers[layerIndex];
+      currentBlock = next?.block ?? currentBlock;
+      remaining = next?.depth ?? Infinity;
     }
 
-    const layer = brushState.blockLayers[layerIndex];
-    state.blockMap[yy][y][x] = layer.block;
+    // 同じならスキップ
+    if(column[yy][y][x] !== currentBlock){
+      column[yy][y][x] = currentBlock;
+    }
 
     remaining--;
   }
 
+  // 上方向
   for(let yy = safeTop + 1; yy < state.maxHeight; yy++){
-    state.blockMap[yy][y][x] = 0;
+    if(column[yy][y][x] !== 0){
+      column[yy][y][x] = 0;
+    }
   }
 
+  // トップ上書き
   const override = state.topBlockMap[y]?.[x];
-  if (override !== null && override !== undefined) {
-    state.blockMap[safeTop][y][x] = override;
+  if (override != null && column[safeTop][y][x] !== override) {
+    column[safeTop][y][x] = override;
   }
 }
 
@@ -182,84 +202,90 @@ export function hideLoading() {
   document.getElementById("loadingOverlay").style.display = "none";
 }
 
-export function saveHistory() {
-  const snapshot = {
-    map: structuredClone(state.map),
+export function beginStroke(){
+  if(state.currentStroke) return; 
+  state.currentStroke = {
+    ops: []
   };
-
-  stackState.undoStack.push(snapshot);
-
-  if (stackState.undoStack.length > stackState.MAX_HISTORY) {
-    stackState.undoStack.shift();
-  }
-
-  stackState.redoStack.length = 0;
 }
 
-function rebuildTopBlockMap() {
-  const map = Array.from({ length: state.heightLength }, () =>
-    new Array(state.widthLength).fill(0)
-  );
-
-  for (let z = 0; z < state.heightLength; z++) {
-    for (let x = 0; x < state.widthLength; x++) {
-
-      for (let y = state.maxHeight - 1; y >= 0; y--) {
-        const b = state.blockMap[y][z][x];
-        if (b !== 0 && b !== null) {
-          map[z][x] = b;
-          break;
-        }
-      }
-
-    }
-  }
-
-  state.topBlockMap = map;
+export function recordChange(x, y, before, after){
+  if(!state.currentStroke) return;
+  state.currentStroke.ops.push({ x, y, before, after });
 }
 
-export function undo() {
-  if (stackState.undoStack.length === 0) return;
+export function endStroke(){
+  const stroke = state.currentStroke;
+  if(!stroke) return;
 
-  const current = {
-    map: structuredClone(state.map),
-  };
+  if (stroke.ops.length > 0) {
+    stackState.undoStack.push(stroke);
 
-  stackState.redoStack.push(current);
-  const prev = stackState.undoStack.pop();
-
-  state.map = prev.map;
-  for (let y = 0; y < state.heightLength; y++) {
-    for (let x = 0; x < state.widthLength; x++) {
-      rebuildColumn(x, y, state.map[y][x]);
+    if (stackState.undoStack.length > stackState.MAX_HISTORY) {
+      stackState.undoStack.shift();
     }
+
+    stackState.redoStack.length = 0;
   }
-  setTimeout(redrawAllChunks, 0)
+
+  state.currentStroke = null;
 }
 
-export function redo() {
-  if (stackState.redoStack.length === 0) return;
+export function setCell(x, y, value) {
+  const before = state.map[y][x];
+  if (before === value) return;
 
-  const current = {
-    map: structuredClone(state.map),
-  };
+  recordChange(x, y, before, value);
 
-  stackState.undoStack.push(current);
-  const next = stackState.redoStack.pop();
+  state.map[y][x] = value;
 
-  state.map = next.map;
-  for (let y = 0; y < state.heightLength; y++) {
-    for (let x = 0; x < state.widthLength; x++) {
-      rebuildColumn(x, y, state.map[y][x]);
-    }
-  }
-  setTimeout(redrawAllChunks, 0)
+  rebuildColumn(x, y, value);
+  updateTopBlock(x, y);
+  markChunkDirty(x, y);
 }
 
-export function redrawAllChunks(){
-  for(let cy = 0; cy < state.chunkRows; cy++){
-    for(let cx = 0; cx < state.chunkCols; cx++){
-      state.dirtyChunks.add(`${cx},${cy}`);
+export function undo(){
+  const stroke = stackState.undoStack.pop();
+  if(!stroke) return;
+
+  stackState.redoStack.push(stroke);
+
+  for(const op of stroke.ops){
+    state.map[op.y][op.x] = op.before;
+
+    rebuildColumn(op.x, op.y, op.before);
+    updateTopBlock(op.x, op.y);
+    markChunkDirty(op.x, op.y);
+  }
+}
+
+export function redo(){
+  const stroke = stackState.redoStack.pop();
+  if(!stroke) return;
+
+  stackState.undoStack.push(stroke);
+
+  for(const op of stroke.ops){
+    state.map[op.y][op.x] = op.after;
+
+    rebuildColumn(op.x, op.y, op.after);
+    updateTopBlock(op.x, op.y);
+    markChunkDirty(op.x, op.y);
+  }
+}
+function updateTopBlock(x, z) {
+  for (let y = state.maxHeight - 1; y >= 0; y--) {
+    const b = state.blockMap[y][z][x];
+    if (b !== 0 && b !== null) {
+      state.topBlockMap[z][x] = b;
+      return;
     }
   }
+  state.topBlockMap[z][x] = 0;
+}
+
+function markChunkDirty(x, y) {
+  const cx = Math.floor(x / chunkSize);
+  const cy = Math.floor(y / chunkSize);
+  state.dirtyChunks.add(`${cx},${cy}`);
 }
