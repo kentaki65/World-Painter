@@ -205,29 +205,37 @@ const splitBloxdschem = function (json) {
 }
 
 async function downloadSchems(result) {
-  if (result.schems.length === 1) {
-    const blob = new Blob([result.schems[0]], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${state.fileName || "schem"}.bloxdschem`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } else {
-    const zip = new JSZip();
-    result.schems.forEach((bin, i) => {
-      const fileName = `${state.fileName || "schem"}${i}.bloxdschem`;
-      zip.file(fileName, bin);
-    });
+  const zip = new JSZip();
 
-    const content = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(content);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${state.fileName || "schems"}.zip`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  result.schems.forEach((bin, i) => {
+    const fileName = `${state.fileName || "schem"}${i}.bloxdschem`;
+    zip.file(fileName, bin);
+  });
+
+  const stateData = {
+    version: 1,
+    size: {
+      width: state.widthLength,
+      height: state.heightLength,
+      depth: state.maxHeight
+    },
+    blockMap: state.blockMap,
+    layerMap: state.layerMap,
+    topBlockMap: state.topBlockMap
+  };
+
+  const stateJson = JSON.stringify(stateData);
+  zip.file(`${state.fileName || "state"}.json`, stateJson);
+
+  const content = await zip.generateAsync({ type: "blob" });
+
+  const url = URL.createObjectURL(content);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${state.fileName || "data"}.zip`;
+  a.click();
+
+  URL.revokeObjectURL(url);
 }
 
 const write = function (json) {

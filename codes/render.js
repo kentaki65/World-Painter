@@ -74,7 +74,7 @@ function drawChunkGrid(ctx, canvas, size, startX, startY, endX, endY) {
   } 
 }
 
-function renderChunk(cx, cy){
+export function renderChunk(cx, cy){
   const size = cellSize;
 
   let canvas = state.chunkCanvas[cy][cx];

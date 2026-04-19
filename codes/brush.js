@@ -1,5 +1,5 @@
 import { state, brushState, chunkSize, cellSize } from "./state.js";
-import { heightClamp, lerp, applyColumnChanges } from "./utils.js";
+import { heightClamp, lerp, applyColumnChanges, saveHistory } from "./utils.js";
 import { nameToId } from "./nameMap.js";
 
 function markDirtyArea(cx, cy, r){
@@ -175,7 +175,7 @@ function layerBrush(cellX, cellY) {
 } 
 
 // ブラシ適用
-export function applyBrush() {
+export function applyBrush() {  
   const size = cellSize * state.zoom;
   const cellX = Math.floor((state.mouseX - state.camX) / size);
   const cellY = Math.floor((state.mouseY - state.camY) / size);

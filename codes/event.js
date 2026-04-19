@@ -11,7 +11,7 @@ import {
 } from "./state.js";
 
 import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
-import { resizeMap, resizeHeight, hideLoading, showLoading } from "./utils.js";
+import { resizeMap, resizeHeight, hideLoading, showLoading, redrawAllChunks, undo, redo, saveHistory} from "./utils.js";
 
 const brushImages = [
   "Circle Mountain 2.webp",
@@ -48,6 +48,7 @@ const brushImages = [
 ]
 
 const canvas = document.getElementById("canvas");
+const openFile = document.getElementById("openFile");
 
 const brushSizeBar = document.getElementById("brushSize");
 const zoomSizeBar = document.getElementById("zoom");
@@ -223,6 +224,7 @@ function switchTab2(activeTab, activeContent) {
 export function eventInit() {
   canvas.addEventListener("mousedown", (e) => {
     if (e.button === 0) {
+      setTimeout(saveHistory, 0);
       state.leftDown = true;
       if (state.mode === "flatten") {
         const size = cellSize * state.zoom;
@@ -314,6 +316,10 @@ export function eventInit() {
     switchTab2(optionTab, optionsContent);
   })
 
+  openFile.addEventListener("click", () => {
+    document.getElementById("stateInput").click();
+  });
+
   Object.keys(blockColors).forEach(name => {
     const element = document.getElementById("block" + name[0].toUpperCase() + name.slice(1));
     if (element) element.addEventListener("click", () => {
@@ -327,6 +333,7 @@ export function eventInit() {
     state.blockMap = blockMapInit();
     state.layerMap = layerMapInit();
     state.topBlockMap = topBlockMap();
+    redrawAllChunks();
   });
 
   exportInput.addEventListener("click", async () => {
@@ -453,4 +460,16 @@ export function eventInit() {
     </html>
     `);
   })
+
+  window.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "z") {
+      e.preventDefault();
+      undo();
+    }
+
+    if (e.ctrlKey && e.key === "y") {
+      e.preventDefault();
+      redo();
+    }
+  });
 }

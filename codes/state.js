@@ -108,6 +108,12 @@ export const brushState = {
   ]
 };
 
+export const stackState = {
+  undoStack: [],
+  redoStack: [],
+  MAX_HISTORY: 10,
+};
+
 export function initChunks(){
   state.chunkCols = Math.ceil(state.widthLength / chunkSize);
   state.chunkRows = Math.ceil(state.heightLength / chunkSize);
@@ -153,5 +159,4 @@ export function initMaps() {
   state.blockMap = blockMapInit();
   state.layerMap = layerMapInit();
   state.topBlockMap = topBlockMap();
-  console.log(state.topBlockMap);
 }

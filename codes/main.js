@@ -17,10 +17,10 @@ function loop(time){
     }
     lastTime = time;
   }
-
   draw(canvas);
   requestAnimationFrame(loop);
 }
+
 initChunks()
 initMaps();
 eventInit();

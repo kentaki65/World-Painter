@@ -1,4 +1,4 @@
-import { state, chunkSize, brushState } from "./state.js";
+import { state, chunkSize, brushState, stackState } from "./state.js";
 
 export const clamp = (v) => {
   return Math.max(0, Math.min(255, v));
@@ -180,4 +180,68 @@ export function showLoading() {
 
 export function hideLoading() {
   document.getElementById("loadingOverlay").style.display = "none";
+}
+
+export function saveHistory() {
+  const snapshot = {
+    map: structuredClone(state.map),
+    blockMap: structuredClone(state.blockMap),
+    layerMap: structuredClone(state.layerMap)
+  };
+
+  stackState.undoStack.push(snapshot);
+
+  if (stackState.undoStack.length > stackState.MAX_HISTORY) {
+    stackState.undoStack.shift();
+  }
+
+  stackState.redoStack.length = 0;
+}
+
+export function undo() {
+  if (stackState.undoStack.length === 0) return;
+
+  const current = {
+    map: structuredClone(state.map),
+    blockMap: structuredClone(state.blockMap),
+    layerMap: structuredClone(state.layerMap)
+  };
+
+  stackState.redoStack.push(current);
+
+  const prev = stackState.undoStack.pop();
+
+  state.map = prev.map;
+  state.blockMap = prev.blockMap;
+  state.layerMap = prev.layerMap;
+
+  redrawAllChunks();
+}
+
+export function redo() {
+  if (stackState.redoStack.length === 0) return;
+
+  const current = {
+    map: structuredClone(state.map),
+    blockMap: structuredClone(state.blockMap),
+    layerMap: structuredClone(state.layerMap)
+  };
+
+  stackState.undoStack.push(current);
+
+  const next = stackState.redoStack.pop();
+
+  state.map = next.map;
+  state.blockMap = next.blockMap;
+  state.layerMap = next.layerMap;
+
+  redrawAllChunks();
+}
+
+export function redrawAllChunks(){
+  for(let cy = 0; cy < state.chunkRows; cy++){
+    for(let cx = 0; cx < state.chunkCols; cx++){
+      state.dirtyChunks.add(`${cx},${cy}`);
+    }
+  }
 }
