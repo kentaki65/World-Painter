@@ -142,12 +142,12 @@
 
                     <div class="field">
                       <label for="paletteSize">Palette size</label>
-                      <input type="number" id="paletteSize" value="4" min="1">
+                      <input type="number" id="paletteSize" value="4" min="1" max="24">
                     </div>
 
                     <div class="field">
                       <label for="maxHeight">Max height</label>
-                      <input type="number" id="maxHeight" value="64" min="32">
+                      <input type="number" id="maxHeight" value="64" min="32" max="128">
                     </div>
 
                     <div class="field">
@@ -196,14 +196,6 @@
                       at or below:
                     </label>
                     <input type="number" id="atOrBelowRangeInput" min="0" max="255" value="0">
-                  </div>
-
-                  <div class="setting-group">
-                    <label>
-                      <input type="checkbox" id="onlyBlockEnabled">
-                      only on:
-                    </label>
-                    <input type="text" id="onlyBlockInput" placeholder="Dirt">
                   </div>
                 </div>
               </div>

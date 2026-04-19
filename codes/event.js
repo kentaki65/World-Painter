@@ -223,8 +223,8 @@ function switchTab2(activeTab, activeContent) {
 
 export function eventInit() {
   canvas.addEventListener("mousedown", (e) => {
+    setTimeout(saveHistory, 0);
     if (e.button === 0) {
-      setTimeout(saveHistory, 0);
       state.leftDown = true;
       if (state.mode === "flatten") {
         const size = cellSize * state.zoom;
@@ -259,7 +259,7 @@ export function eventInit() {
     }
 
     state.brushRadius += e.deltaY > 0 ? -2 : 2;
-    state.brushRadius = Math.max(1, Math.min(300, state.brushRadius));
+    state.brushRadius = Math.max(1, Math.min(70, state.brushRadius));
     brushSizeBar.textContent = `Size: ${state.brushRadius}`;
   });
 

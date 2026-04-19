@@ -185,8 +185,6 @@ export function hideLoading() {
 export function saveHistory() {
   const snapshot = {
     map: structuredClone(state.map),
-    blockMap: structuredClone(state.blockMap),
-    layerMap: structuredClone(state.layerMap)
   };
 
   stackState.undoStack.push(snapshot);
@@ -198,24 +196,45 @@ export function saveHistory() {
   stackState.redoStack.length = 0;
 }
 
+function rebuildTopBlockMap() {
+  const map = Array.from({ length: state.heightLength }, () =>
+    new Array(state.widthLength).fill(0)
+  );
+
+  for (let z = 0; z < state.heightLength; z++) {
+    for (let x = 0; x < state.widthLength; x++) {
+
+      for (let y = state.maxHeight - 1; y >= 0; y--) {
+        const b = state.blockMap[y][z][x];
+        if (b !== 0 && b !== null) {
+          map[z][x] = b;
+          break;
+        }
+      }
+
+    }
+  }
+
+  state.topBlockMap = map;
+}
+
 export function undo() {
   if (stackState.undoStack.length === 0) return;
 
   const current = {
     map: structuredClone(state.map),
-    blockMap: structuredClone(state.blockMap),
-    layerMap: structuredClone(state.layerMap)
   };
 
   stackState.redoStack.push(current);
-
   const prev = stackState.undoStack.pop();
 
   state.map = prev.map;
-  state.blockMap = prev.blockMap;
-  state.layerMap = prev.layerMap;
-
-  redrawAllChunks();
+  for (let y = 0; y < state.heightLength; y++) {
+    for (let x = 0; x < state.widthLength; x++) {
+      rebuildColumn(x, y, state.map[y][x]);
+    }
+  }
+  setTimeout(redrawAllChunks, 0)
 }
 
 export function redo() {
@@ -223,19 +242,18 @@ export function redo() {
 
   const current = {
     map: structuredClone(state.map),
-    blockMap: structuredClone(state.blockMap),
-    layerMap: structuredClone(state.layerMap)
   };
 
   stackState.undoStack.push(current);
-
   const next = stackState.redoStack.pop();
 
   state.map = next.map;
-  state.blockMap = next.blockMap;
-  state.layerMap = next.layerMap;
-
-  redrawAllChunks();
+  for (let y = 0; y < state.heightLength; y++) {
+    for (let x = 0; x < state.widthLength; x++) {
+      rebuildColumn(x, y, state.map[y][x]);
+    }
+  }
+  setTimeout(redrawAllChunks, 0)
 }
 
 export function redrawAllChunks(){
