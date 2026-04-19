@@ -36,6 +36,16 @@ canvas {
   border-left: 2px solid gray;     
 }
 
+.toolsColumn-right {
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  width: 215px;     
+  flex-shrink: 0;
+  border-right: 2px solid gray;   
+  border-left: 2px solid gray;  
+}
+
 .toolsUi, .blocksUI, .brushUI{
   display: flex;
   flex-wrap: wrap;

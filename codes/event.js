@@ -65,8 +65,6 @@ const paletteSizeInput = document.getElementById("paletteSize");
 const maxHeightInput = document.getElementById("maxHeight");
 const waterLevelInput = document.getElementById("waterLevelHeight");
 
-const restoreDefault = document.getElementById("restoreDefault");
-
 const layerTab = document.getElementById("layertab");
 const terrainTab = document.getElementById("terraintab");
 const advancedTab = document.getElementById("advancedtab");
@@ -75,10 +73,20 @@ const layerContent = document.getElementById("layerContent");
 const terrainContent = document.getElementById("terrainContent");
 const advancedSetting = document.getElementById("advancedContent");
 
+const brushTab = document.getElementById("brushestab");
+const optionTab = document.getElementById("optionstab");
+
+const brushContent = document.getElementById("brushContent");
+const optionsContent = document.getElementById("optionsContent");
+
 const tabs = [layerTab, terrainTab, advancedTab];
 const contents = [layerContent, terrainContent, advancedSetting];
 
+const tabs2 = [brushTab, optionTab];
+const contents2 = [brushContent, optionsContent];
+
 const toolName = document.getElementById("toolName");
+const toolName2 = document.getElementById("toolName2");
 
 function changeMode(e) {
   const name = e.currentTarget.id;
@@ -122,6 +130,8 @@ async function loadAllBrushes(brushImages) {
   const container = document.getElementById("brushUI");
   showLoading();
   try {
+    //throw new Error();
+
     await new Promise(r => setTimeout(r, 0));
     const results = await Promise.all(
       brushImages.map(filename => loadBrush(filename))
@@ -194,6 +204,16 @@ function switchTab(activeTab, activeContent) {
   // 全部リセット
   tabs.forEach(tab => tab.classList.remove("tab--active"));
   contents.forEach(content => content.classList.add("hidden"));
+
+  // 選択だけ有効化
+  activeTab.classList.add("tab--active");
+  activeContent.classList.remove("hidden");
+}
+
+function switchTab2(activeTab, activeContent) {
+  // 全部リセット
+  tabs2.forEach(tab => tab.classList.remove("tab--active"));
+  contents2.forEach(content => content.classList.add("hidden"));
 
   // 選択だけ有効化
   activeTab.classList.add("tab--active");
@@ -284,6 +304,16 @@ export function eventInit() {
     switchTab(advancedTab, advancedSetting);
   });
 
+  brushTab.addEventListener("click", e => {
+    toolName2.textContent = "Brushes";
+    switchTab2(brushTab, brushContent);
+  })
+
+  optionTab.addEventListener("click", e => {
+    toolName2.textContent = "Options";
+    switchTab2(optionTab, optionsContent);
+  })
+
   Object.keys(blockColors).forEach(name => {
     const element = document.getElementById("block" + name[0].toUpperCase() + name.slice(1));
     if (element) element.addEventListener("click", () => {
@@ -352,11 +382,6 @@ export function eventInit() {
     });
   });
   loadAllBrushes(brushImages);
-
-  restoreDefault.addEventListener("click", (e) => {
-    brushBar.textContent = `Brush: default`;
-    brushState.brushType = "default";
-  });
 
   open3dView.addEventListener("click", (e) => {
     const win = window.open("", "_blank", "width=800,height=600");

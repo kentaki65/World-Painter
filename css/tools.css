@@ -74,18 +74,22 @@
   padding: 5px;
 }
 
-.toolName {
+.toolName, .toolName2 {
   padding: 5px;
   font-weight: bold;
 }
 
-.toolName::before {
+.toolName::before, .toolName2::before {
   content: "*"
 }
 
 .hideOption {
-  display: flex;
-  flex-direction: column;
+  margin-right: 10px;
   writing-mode: vertical-lr;
   text-orientation: sideways;
+}
+
+.labels {
+  font-weight: bold;
+  margin: 10px;
 }

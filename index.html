@@ -82,15 +82,11 @@
           <div class="toolColumn">
             <div class="toolName" id="toolName">Layers</div>
             <div class="columnWrap" id="layerContent">
-              <div class="hideOption">
-                <span>Show</span>
-                <span>Solo</span>
-              </div>
+              <div class="hideOption">Show</div>
               <div class="toolContent">
                 <div class="toolTypes">
                   <input type="checkbox">
-                  <input type="checkbox">
-                  草☘️
+                  <button type="button">Forest</button>
                 </div>
               </div>
             </div>
@@ -166,42 +162,54 @@
         </div>
       </div>
       <canvas id="canvas"></canvas>
-      <div class="toolsColumn" id="brushes">
-        <div class="labels">brushes</div>
-          <div class="brushUI" id="brushUI">
-            <button class="defaultBrush" title="dirt" id="restoreDefault">
-              Restore default
-            </button>
-          </div>
-          <div class="labels">options</div>
-          <div class="settingWrapper">
-            <div class="setting-group">
-              <label>
-                <input type="checkbox" id="atOrAboveEnabled">
-                at or above:
-              </label>
-              <input type="number" id="orAboveRangeInput" min="0" max="255" value="0">
+      <div class="toolsColumn-right">
+        <div class="toolBox">
+          <div class="toolTabs">
+            <div class="tab">
+              <button type="button" id="brushestab">Brushes</button>
             </div>
-
-            <div class="setting-group">
-              <label>
-                <input type="checkbox" id="atOrBelowEnabled">
-                at or below:
-              </label>
-              <input type="number" id="atOrBelowRangeInput" min="0" max="255" value="0">
-            </div>
-
-            <div class="setting-group">
-              <label>
-                <input type="checkbox" id="onlyBlockEnabled">
-                only on:
-              </label>
-              <input type="text" id="onlyBlockInput" placeholder="Dirt">
+            <div class="tab">
+              <button type="button" id="optionstab">Options</button>
             </div>
           </div>
+          <div class="toolColumn">
+            <div class="toolName2" id="toolName2">Brushes</div>
+            <div class="columnWrap" id="brushContent">
+              <div class="toolContent" id="brushUI">
+
+              </div>
+            </div>
+            <div class="columnWrap hidden" id="optionsContent">
+              <div class="toolContent">
+                <div class="settingWrapper">
+                  <div class="setting-group">
+                    <label>
+                      <input type="checkbox" id="atOrAboveEnabled">
+                      at or above:
+                    </label>
+                    <input type="number" id="orAboveRangeInput" min="0" max="255" value="0">
+                  </div>
+
+                  <div class="setting-group">
+                    <label>
+                      <input type="checkbox" id="atOrBelowEnabled">
+                      at or below:
+                    </label>
+                    <input type="number" id="atOrBelowRangeInput" min="0" max="255" value="0">
+                  </div>
+
+                  <div class="setting-group">
+                    <label>
+                      <input type="checkbox" id="onlyBlockEnabled">
+                      only on:
+                    </label>
+                    <input type="text" id="onlyBlockInput" placeholder="Dirt">
+                  </div>
+                </div>
+              </div>
+            </div>
         </div>
       </div>
-    </div>
     <div class="underbar" id="underbar">
       <div class="child" id="location">Location: 0, 0, grass</div>
       <div class="child" id="heightchild">Height: 0</div>
