@@ -50,8 +50,9 @@ function drawBrushPreview(canvas){
   const ctx = canvas.getContext("2d"); 
   const radius = state.brushRadius * cellSize * state.zoom; 
   ctx.beginPath(); 
+  ctx.setLineDash([10, 4])
   ctx.arc(state.mouseX, state.mouseY, radius, 0, Math.PI * 2); 
-  ctx.strokeStyle = "white"; 
+  ctx.strokeStyle = "black";
   ctx.lineWidth = 2; 
   ctx.stroke(); 
 }

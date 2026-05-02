@@ -183,37 +183,6 @@ export function hideLoading() {
   document.getElementById("loadingOverlay").style.display = "none";
 }
 
-export function beginStroke() {
-  currentStroke = [];
-}
-
-export function recordChange(x, y, newVal) {
-  const oldVal = state.map[y][x];
-  if (oldVal === newVal) return;
-
-  currentStroke.push({
-    x,
-    y,
-    before: oldVal,
-    after: newVal
-  });
-
-  state.map[y][x] = newVal;
-}
-
-export function endStroke() {
-  if (!currentStroke || currentStroke.length === 0) return;
-
-  stackState.undoStack.push(currentStroke);
-
-  if (stackState.undoStack.length > stackState.MAX_HISTORY) {
-    stackState.undoStack.shift();
-  }
-
-  stackState.redoStack.length = 0;
-  currentStroke = null;
-}
-
 export function undo() {
   const stroke = stackState.undoStack.pop();
   if (!stroke) return;

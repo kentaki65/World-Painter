@@ -509,7 +509,7 @@ export function eventInit() {
       redo();
     }
 
-    if(e.key === "s" || e.key === "S"){
+    if(e.key === "s"){
       e.preventDefault();
       await quickSave();
     }

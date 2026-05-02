@@ -1,6 +1,43 @@
 import { state } from "./state.js";
+import { downloadJSON, importJSON } from "./parser.js";
 import { redrawAllChunks } from "./utils.js";
 let db;
+
+const fileInput = document.createElement("input");
+fileInput.type = "file";
+fileInput.accept = ".json";
+
+fileInput.onchange = (e) => {
+  const file = e.target.files[0];
+  if (file) importJSON(file);
+};
+
+function openLoadDialog() {
+  fileInput.click();
+}
+
+document.addEventListener("keydown", (e) => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (!ctrl) return;
+
+  const tag = document.activeElement.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+  if (e.key === "s" || e.key === "S") {
+    e.preventDefault();
+
+    if (e.shiftKey) {
+      downloadJSON(); // Ctrl+Shift+S → ファイル保存
+    } else {
+      quickSave(); // Ctrl+S → IndexedDB
+    }
+  }
+
+  if (e.key === "o" || e.key === "O") {
+    e.preventDefault();
+    openLoadDialog(); // Ctrl+O → 読み込み
+  }
+});
 
 export function initDB() {
   return new Promise((resolve, reject) => {

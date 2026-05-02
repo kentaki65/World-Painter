@@ -238,20 +238,85 @@ async function downloadSchems(result) {
   URL.revokeObjectURL(url);
 }
 
-async function downloadJSON(){
-  const stateData = {
+export function downloadJSON() {
+  const data = {
     version: 1,
-    size: {
+    map: state.map,
+    topBlockMap: state.topBlockMap,
+    layerMap: state.layerMap,
+    meta: {
       width: state.widthLength,
       height: state.heightLength,
-      depth: state.maxHeight
-    },
-    blockMap: state.blockMap,
-    layerMap: state.layerMap,
-    topBlockMap: state.topBlockMap
+      maxHeight: state.maxHeight,
+      time: Date.now()
+    }
   };
 
-  
+  const json = JSON.stringify(data);
+  const blob = new Blob([json], { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `terrain_${Date.now()}.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+export function importJSON(file) {
+  const reader = new FileReader();
+
+  reader.onload = async () => {
+    try {
+      const data = JSON.parse(reader.result);
+
+      if (!data.map || !data.meta) {
+        throw new Error("Invalid format");
+      }
+
+      const targetChunkX = Math.ceil(data.meta.width / chunkSize);
+      const targetChunkZ = Math.ceil(data.meta.height / chunkSize);
+
+      if (
+        targetChunkX !== state.chunkLenX ||
+        targetChunkZ !== state.chunkLenZ
+      ) {
+        const ok = confirm("マップサイズが違います。リサイズして読み込みますか？");
+        if (!ok) return;
+
+        await resizeMap(targetChunkX, targetChunkZ);
+      }
+
+      if (data.meta.maxHeight !== state.maxHeight) {
+        await resizeHeight(data.meta.maxHeight);
+      }
+
+      state.map = data.map;
+      state.topBlockMap = data.topBlockMap ?? null;
+      state.layerMap = data.layerMap ?? null;
+
+      for (let y = 0; y < state.heightLength; y++) {
+        for (let x = 0; x < state.widthLength; x++) {
+          rebuildColumn(x, y, state.map[y][x]);
+        }
+      }
+
+      state.dirtyChunks.clear();
+      for (let cy = 0; cy < state.chunkRows; cy++) {
+        for (let cx = 0; cx < state.chunkCols; cx++) {
+          state.dirtyChunks.add(`${cx},${cy}`);
+        }
+      }
+
+      console.log("Loaded JSON");
+
+    } catch (e) {
+      console.error("Invalid JSON", e);
+    }
+  };
+
+  reader.readAsText(file);
 }
 
 const write = function (json) {

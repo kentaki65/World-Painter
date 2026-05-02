@@ -29,7 +29,7 @@ export function endStroke() {
 function recordChange(x, y, before, after, type = "height") {
   const key = `${type}:${x},${y}`;
 
-  if (!strokeMap.has(key)) {
+  if (!strokeMap || !strokeMap.has(key)) {
     strokeMap.set(key, { x, y, before, after, type });
   } else {
     strokeMap.get(key).after = after;
