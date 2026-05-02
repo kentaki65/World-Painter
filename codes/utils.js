@@ -1,4 +1,5 @@
 import { state, chunkSize, brushState, stackState } from "./state.js";
+let currentStroke = null;
 
 export const clamp = (v) => {
   return Math.max(0, Math.min(255, v));
@@ -182,60 +183,61 @@ export function hideLoading() {
   document.getElementById("loadingOverlay").style.display = "none";
 }
 
-export function saveHistory() {
-  const snapshot = {
-    map: structuredClone(state.map),
-    blockMap: structuredClone(state.blockMap),
-    layerMap: structuredClone(state.layerMap)
-  };
+export function beginStroke() {
+  currentStroke = [];
+}
 
-  stackState.undoStack.push(snapshot);
+export function recordChange(x, y, newVal) {
+  const oldVal = state.map[y][x];
+  if (oldVal === newVal) return;
+
+  currentStroke.push({
+    x,
+    y,
+    before: oldVal,
+    after: newVal
+  });
+
+  state.map[y][x] = newVal;
+}
+
+export function endStroke() {
+  if (!currentStroke || currentStroke.length === 0) return;
+
+  stackState.undoStack.push(currentStroke);
 
   if (stackState.undoStack.length > stackState.MAX_HISTORY) {
     stackState.undoStack.shift();
   }
 
   stackState.redoStack.length = 0;
+  currentStroke = null;
 }
 
 export function undo() {
-  if (stackState.undoStack.length === 0) return;
+  const stroke = stackState.undoStack.pop();
+  if (!stroke) return;
 
-  const current = {
-    map: structuredClone(state.map),
-    blockMap: structuredClone(state.blockMap),
-    layerMap: structuredClone(state.layerMap)
-  };
+  for (const c of stroke) {
+    state.map[c.y][c.x] = c.before;
+  }
 
-  stackState.redoStack.push(current);
-
-  const prev = stackState.undoStack.pop();
-
-  state.map = prev.map;
-  state.blockMap = prev.blockMap;
-  state.layerMap = prev.layerMap;
-
-  redrawAllChunks();
+  stackState.redoStack.push(stroke);
+  redrawFromStroke(stroke);
+  applyColumnChanges(new Set(stroke.map(c => `${c.x},${c.y}`)));
 }
 
 export function redo() {
-  if (stackState.redoStack.length === 0) return;
+  const stroke = stackState.redoStack.pop();
+  if (!stroke) return;
 
-  const current = {
-    map: structuredClone(state.map),
-    blockMap: structuredClone(state.blockMap),
-    layerMap: structuredClone(state.layerMap)
-  };
+  for (const c of stroke) {
+    state.map[c.y][c.x] = c.after;
+  }
 
-  stackState.undoStack.push(current);
-
-  const next = stackState.redoStack.pop();
-
-  state.map = next.map;
-  state.blockMap = next.blockMap;
-  state.layerMap = next.layerMap;
-
-  redrawAllChunks();
+  stackState.undoStack.push(stroke);
+  redrawFromStroke(stroke);
+  applyColumnChanges(new Set(stroke.map(c => `${c.x},${c.y}`)));
 }
 
 export function redrawAllChunks(){
@@ -243,5 +245,13 @@ export function redrawAllChunks(){
     for(let cx = 0; cx < state.chunkCols; cx++){
       state.dirtyChunks.add(`${cx},${cy}`);
     }
+  }
+}
+
+export function redrawFromStroke(stroke) {
+  for (const { x, y } of stroke) {
+    const cx = Math.floor(x / chunkSize);
+    const cy = Math.floor(y / chunkSize);
+    state.dirtyChunks.add(`${cx},${cy}`);
   }
 }

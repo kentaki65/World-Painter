@@ -238,6 +238,22 @@ async function downloadSchems(result) {
   URL.revokeObjectURL(url);
 }
 
+async function downloadJSON(){
+  const stateData = {
+    version: 1,
+    size: {
+      width: state.widthLength,
+      height: state.heightLength,
+      depth: state.maxHeight
+    },
+    blockMap: state.blockMap,
+    layerMap: state.layerMap,
+    topBlockMap: state.topBlockMap
+  };
+
+  
+}
+
 const write = function (json) {
 	const avroJson = {
 		name: json.name,

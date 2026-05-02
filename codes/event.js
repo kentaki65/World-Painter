@@ -11,7 +11,8 @@ import {
 } from "./state.js";
 
 import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
-import { resizeMap, resizeHeight, hideLoading, showLoading, redrawAllChunks, undo, redo, saveHistory} from "./utils.js";
+import { resizeMap, resizeHeight, hideLoading, showLoading, redrawAllChunks, undo, redo, applyColumnChanges} from "./utils.js";
+import { quickSave } from "./autosave.js";
 
 const brushImages = [
   "Circle Mountain 2.webp",
@@ -60,6 +61,9 @@ const brushBar = document.getElementById("brushType");
 const newFileInput = document.getElementById("newFile");
 const exportInput = document.getElementById("exportFile");
 const open3dView = document.getElementById("open3dview");
+
+const locationBar = document.getElementById("location");
+const heightBar = document.getElementById("heightchild");
 
 const fileNameInput = document.getElementById("volume");
 const paletteSizeInput = document.getElementById("paletteSize");
@@ -224,7 +228,7 @@ function switchTab2(activeTab, activeContent) {
 export function eventInit() {
   canvas.addEventListener("mousedown", (e) => {
     if (e.button === 0) {
-      setTimeout(saveHistory, 0);
+      //setTimeout(saveHistory, 0);
       state.leftDown = true;
       if (state.mode === "flatten") {
         const size = cellSize * state.zoom;
@@ -264,9 +268,26 @@ export function eventInit() {
   });
 
   canvas.addEventListener("mousemove", (e) => {
+    // 先にマウス座標更新
     state.mouseX = e.offsetX;
     state.mouseY = e.offsetY;
 
+    const size = cellSize * state.zoom;
+    const cellX = Math.floor((state.mouseX - state.camX) / size);
+    const cellY = Math.floor((state.mouseY - state.camY) / size);
+
+    // 範囲チェック（絶対戻す）
+    if (
+      cellX >= 0 &&
+      cellY >= 0 &&
+      cellX < state.widthLength &&
+      cellY < state.heightLength
+    ) {
+      locationBar.textContent = `Location: ${cellX}, ${cellY}`;
+      heightBar.textContent = `Height: ${Math.floor(state.map[cellY][cellX])}/${state.maxHeight}`;
+    }
+
+    // パン処理
     if (!state.panning) return;
 
     const dx = e.clientX - state.panStartX;
@@ -461,15 +482,36 @@ export function eventInit() {
     `);
   })
 
-  window.addEventListener("keydown", (e) => {
-    if (e.ctrlKey && e.key === "z") {
+  document.addEventListener("keydown", async (e) => {
+    const tag = document.activeElement.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+    // Ctrl / Cmd 対応
+    const ctrl = e.ctrlKey || e.metaKey;
+
+    if (!ctrl) return;
+
+    // Undo
+    if (e.key === "z" || e.key === "Z") {
       e.preventDefault();
-      undo();
+
+      if (e.shiftKey) {
+        // Ctrl+Shift+Z → Redo
+        redo();
+      } else {
+        undo();
+      }
     }
 
-    if (e.ctrlKey && e.key === "y") {
+    // Ctrl+Y → Redo
+    if (e.key === "y" || e.key === "Y") {
       e.preventDefault();
       redo();
+    }
+
+    if(e.key === "s" || e.key === "S"){
+      e.preventDefault();
+      await quickSave();
     }
   });
 }
