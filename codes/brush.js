@@ -199,6 +199,33 @@ function layerBrush(cellX, cellY) {
   }
 }
 
+function noiseBrush(cellX, cellY) {
+  const r = state.brushRadius;
+
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      const x = cellX + dx;
+      const y = cellY + dy;
+
+      if (x < 0 || y < 0 || x >= state.widthLength || y >= state.heightLength) continue;
+      if (dx*dx + dy*dy > r*r) continue;
+
+      const oldH = state.map[y][x];
+
+      const raw = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+      const n = (raw - Math.floor(raw)) * 2 - 1; // -1〜1
+
+      const falloff = 1 - (dx*dx + dy*dy)/(r*r);
+      const strength = 0.2 * falloff;
+
+      const newH = heightClamp(oldH + n * strength * 1.1);
+
+      state.map[y][x] = newH;
+      markDirty(x, y);
+    }
+  }
+}
+
 export function applyBrush() {
   const size = cellSize * state.zoom;
   const cellX = Math.floor((state.mouseX - state.camX) / size);
@@ -223,6 +250,9 @@ export function applyBrush() {
       break;
     case "layerPaint":
       layerBrush(cellX, cellY);
+      break;
+    case "noise":
+      noiseBrush(cellX, cellY);
       break;
     default:
       normalBrush(cellX, cellY);

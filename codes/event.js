@@ -10,7 +10,7 @@ import {
   topBlockMap
 } from "./state.js";
 
-import { writeBloxdSchem, downloadSchems, convertChunks, growForest } from "./parser.js";
+import { writeBloxdSchem, downloadSchems, convertChunks, growForest, loadSchem, applyParsed} from "./parser.js";
 import { resizeMap, resizeHeight, hideLoading, showLoading, redrawAllChunks, undo, redo, applyColumnChanges} from "./utils.js";
 import { quickSave } from "./autosave.js";
 
@@ -49,7 +49,6 @@ const brushImages = [
 ]
 
 const canvas = document.getElementById("canvas");
-const openFile = document.getElementById("openFile");
 
 const brushSizeBar = document.getElementById("brushSize");
 const zoomSizeBar = document.getElementById("zoom");
@@ -60,6 +59,10 @@ const brushBar = document.getElementById("brushType");
 
 const newFileInput = document.getElementById("newFile");
 const exportInput = document.getElementById("exportFile");
+
+const importInput = document.getElementById("importInput");
+const fileInput = document.getElementById("schemInput");
+
 const open3dView = document.getElementById("open3dview");
 
 const locationBar = document.getElementById("location");
@@ -337,10 +340,6 @@ export function eventInit() {
     switchTab2(optionTab, optionsContent);
   })
 
-  openFile.addEventListener("click", () => {
-    document.getElementById("stateInput").click();
-  });
-
   Object.keys(blockColors).forEach(name => {
     const element = document.getElementById("block" + name[0].toUpperCase() + name.slice(1));
     if (element) element.addEventListener("click", () => {
@@ -364,6 +363,19 @@ export function eventInit() {
     await downloadSchems(result);
   });
 
+  importInput.addEventListener("click", () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    console.log("Success")
+    const result = await loadSchem(file);
+    applyParsed(result);
+  });
+  
   fileNameInput.addEventListener("input", (e) => {
     state.fileName = e.target.value;
     console.log("fileName:", paletteSettings.fileName);

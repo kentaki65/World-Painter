@@ -175,6 +175,66 @@ function convertChunks(state) {
   };
 }
 
+function convertTo3D(avroJson) {
+	const chunkSize = 32
+	const result = {
+		name: avroJson.name,
+		size: [avroJson.sizeX, avroJson.sizeY, avroJson.sizeZ],
+		blocks: [],
+	}
+	for (const chunk of avroJson.chunks) {
+		const decoded = decodeBlocks(chunk)
+
+		let i = 0
+		for (let x = 0; x < chunkSize; x++) {
+			for (let y = 0; y < chunkSize; y++) {
+				for (let z = 0; z < chunkSize; z++) {
+					const id = decoded[i++]
+					if (id === 0) continue
+					const wx = chunk.x * chunkSize + x
+					const wy = chunk.y * chunkSize + y
+					const wz = chunk.z * chunkSize + z
+					result.blocks.push({
+						x: wx,
+						y: wy,
+						z: wz,
+						id
+					})
+				}
+			}
+		}	
+	}
+	return result;
+}
+
+function applyParsed(result) {
+  for (const b of result.blocks) {
+    if (
+      b.x < 0 || b.z < 0 ||
+      b.x >= state.widthLength ||
+      b.z >= state.heightLength ||
+      b.y >= state.maxHeight
+    ) continue;
+
+    state.blockMap[b.y][b.z][b.x] = b.id;
+  }
+
+  // 高さ再計算
+  for (let z = 0; z < state.heightLength; z++) {
+    for (let x = 0; x < state.widthLength; x++) {
+
+      for (let y = state.maxHeight - 1; y >= 0; y--) {
+        if (state.blockMap[y][z][x] !== 0) {
+          state.map[z][x] = y;
+          state.topBlockMap[z][x] = state.blockMap[y][z][x];
+          break;
+        }
+      }
+
+    }
+  }
+}
+
 const splitBloxdschem = function (json) {
 	const schems = [];
 	const zySize = Math.ceil(json.sizeY / 32) * Math.ceil(json.sizeZ / 32);
@@ -204,6 +264,32 @@ const splitBloxdschem = function (json) {
 	};
 }
 
+function decodeBlocks(avroChunk) {
+	let i = 0
+	const blocks = []
+	function decodeLEB128() {
+		let shift = 0
+		let value = 0
+
+		while (true) {
+			const byte = avroChunk.blocks[i++]
+			value |= (byte & 127) << shift
+			shift += 7
+			if ((byte & 128) === 0) break
+		}
+		return value
+	}
+	while (i < avroChunk.blocks.length) {
+		const amount = decodeLEB128()
+		const id = decodeLEB128()
+		for (let j = 0; j < amount; j++) {
+			blocks.push(id)
+		}
+	}
+
+	return blocks
+}
+
 async function downloadSchems(result) {
   const zip = new JSZip();
 
@@ -211,22 +297,7 @@ async function downloadSchems(result) {
     const fileName = `${state.fileName || "schem"}${i}.bloxdschem`;
     zip.file(fileName, bin);
   });
-
-  const stateData = {
-    version: 1,
-    size: {
-      width: state.widthLength,
-      height: state.heightLength,
-      depth: state.maxHeight
-    },
-    blockMap: state.blockMap,
-    layerMap: state.layerMap,
-    topBlockMap: state.topBlockMap
-  };
-
-  const stateJson = JSON.stringify(stateData);
-  zip.file(`${state.fileName || "state"}.json`, stateJson);
-
+  
   const content = await zip.generateAsync({ type: "blob" });
 
   const url = URL.createObjectURL(content);
@@ -319,7 +390,33 @@ export function importJSON(file) {
   reader.readAsText(file);
 }
 
-const write = function (json) {
+function loadSchem(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const arrayBuffer = reader.result;
+        const uint8 = new Uint8Array(arrayBuffer);
+
+        const buf = Buffer.from(uint8);
+        const result = parse(buf);
+
+        resolve(result);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = reject;
+
+    reader.readAsArrayBuffer(file);
+  });
+}
+function parse(avroBuffer) {
+	const data = schema0.fromBuffer(avroBuffer, undefined, true);
+	return convertTo3D(data);
+}
+
+function writeBloxdSchem(json) {
 	const avroJson = {
 		name: json.name,
 		x: 0,
@@ -400,4 +497,4 @@ const write = function (json) {
 	};
 };
 
-export { write as writeBloxdSchem, convertChunks, downloadSchems };
+export { writeBloxdSchem, loadSchem, convertChunks, downloadSchems, applyParsed};

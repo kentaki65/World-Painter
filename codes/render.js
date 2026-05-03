@@ -14,7 +14,6 @@ function getColor(blockName) {
 
   console.log(blockName);
   const base = blockColors[blockName] ?? DEFAULT_COLOR;
-  if(blockName==="Water")console.log("水だ水!")
   const color = `rgb(${base[0]},${base[1]},${base[2]})`;
 
   colorCache.set(blockName, color);

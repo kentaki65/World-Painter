@@ -4,6 +4,9 @@ import { redrawAllChunks } from "./utils.js";
 let db;
 
 const fileInput = document.createElement("input");
+const openFile = document.getElementById("openFile");
+const saveFile = document.getElementById("saveFile");
+
 fileInput.type = "file";
 fileInput.accept = ".json";
 
@@ -15,6 +18,15 @@ fileInput.onchange = (e) => {
 function openLoadDialog() {
   fileInput.click();
 }
+
+openFile.addEventListener("click", () => {
+  document.getElementById("stateInput").click();
+  openLoadDialog();
+});
+
+saveFile.addEventListener("click", (e) => {
+  downloadJSON();
+})
 
 document.addEventListener("keydown", (e) => {
   const ctrl = e.ctrlKey || e.metaKey;
