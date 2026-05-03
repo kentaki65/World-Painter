@@ -2,6 +2,7 @@ import avro from "https://esm.sh/avsc@5.7.9";
 import { Buffer } from "https://esm.sh/buffer";
 import { nameToId } from "./nameMap.js";
 import { state, treesStructures } from "./state.js";
+import { resizeMap, resizeHeight} from "./utils.js";
 
 const schema0 = avro.Type.forSchema({
 	type: "record",
@@ -32,6 +33,7 @@ const schema0 = avro.Type.forSchema({
 		}
 	]
 });
+const chunkSize = 32;
 
 function getMaxUsedHeight(state) {
 	let max = 0;
@@ -99,7 +101,6 @@ export function growForest(state, pine, spacing = 8){
 
 function convertChunks(state) {
   const chunks = [];
-  const chunkSize = 32;
   const chunkCountX = state.chunkLenX;
   const chunkCountZ = state.chunkLenZ;
   const maxUsedHeight = getMaxUsedHeight(state);
@@ -207,6 +208,51 @@ function convertTo3D(avroJson) {
 	return result;
 }
 
+async function loadSchemAsWorld(result) {
+  const width = result.size[0];
+  const height = result.size[1];
+  const depth = result.size[2];
+
+  const chunkX = Math.ceil(width / chunkSize);
+  const chunkZ = Math.ceil(depth / chunkSize);
+
+  await resizeMap(chunkX, chunkZ);
+  await resizeHeight(height);
+
+  for (let y = 0; y < state.maxHeight; y++) {
+    for (let z = 0; z < state.heightLength; z++) {
+      for (let x = 0; x < state.widthLength; x++) {
+        state.blockMap[y][z][x] = 0;
+      }
+    }
+  }
+
+  applyParsed(result);
+}
+
+function rebuildHeight() {
+  for (let z = 0; z < state.heightLength; z++) {
+    for (let x = 0; x < state.widthLength; x++) {
+
+      let found = false;
+
+      for (let y = state.maxHeight - 1; y >= 0; y--) {
+        if (state.blockMap[y][z][x] !== 0) {
+          state.map[z][x] = y;
+          state.topBlockMap[z][x] = state.blockMap[y][z][x];
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        state.map[z][x] = 0;
+        state.topBlockMap[z][x] = null;
+      }
+    }
+  }
+}
+
 function applyParsed(result) {
   for (const b of result.blocks) {
     if (
@@ -219,20 +265,7 @@ function applyParsed(result) {
     state.blockMap[b.y][b.z][b.x] = b.id;
   }
 
-  // 高さ再計算
-  for (let z = 0; z < state.heightLength; z++) {
-    for (let x = 0; x < state.widthLength; x++) {
-
-      for (let y = state.maxHeight - 1; y >= 0; y--) {
-        if (state.blockMap[y][z][x] !== 0) {
-          state.map[z][x] = y;
-          state.topBlockMap[z][x] = state.blockMap[y][z][x];
-          break;
-        }
-      }
-
-    }
-  }
+  rebuildHeight(); // ← 下で定義
 }
 
 const splitBloxdschem = function (json) {
@@ -411,6 +444,7 @@ function loadSchem(file) {
     reader.readAsArrayBuffer(file);
   });
 }
+
 function parse(avroBuffer) {
 	const data = schema0.fromBuffer(avroBuffer, undefined, true);
 	return convertTo3D(data);
@@ -497,4 +531,4 @@ function writeBloxdSchem(json) {
 	};
 };
 
-export { writeBloxdSchem, loadSchem, convertChunks, downloadSchems, applyParsed};
+export { writeBloxdSchem, loadSchem, convertChunks, downloadSchems, applyParsed, loadSchemAsWorld, };

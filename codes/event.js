@@ -10,7 +10,7 @@ import {
   topBlockMap
 } from "./state.js";
 
-import { writeBloxdSchem, downloadSchems, convertChunks, growForest, loadSchem, applyParsed} from "./parser.js";
+import { writeBloxdSchem, downloadSchems, convertChunks, growForest, loadSchem, loadSchemAsWorld, applyParsed} from "./parser.js";
 import { resizeMap, resizeHeight, hideLoading, showLoading, redrawAllChunks, undo, redo, applyColumnChanges} from "./utils.js";
 import { quickSave } from "./autosave.js";
 
@@ -373,7 +373,9 @@ export function eventInit() {
 
     console.log("Success")
     const result = await loadSchem(file);
-    applyParsed(result);
+    await loadSchemAsWorld(result);
+
+    //applyParsed(result);
   });
   
   fileNameInput.addEventListener("input", (e) => {
