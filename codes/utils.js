@@ -1,9 +1,12 @@
 import { state, chunkSize, brushState, stackState } from "./state.js";
 let currentStroke = null;
-
-export const clamp = (v) => {
-  return Math.max(0, Math.min(255, v));
-}
+const LEAF_BLOCKS = new Set([
+  100,101,102,103,
+  208,209,210,211,
+  491,492,493,
+  494,495,496,
+  1259, 2019, 2020, 2021, 2022, 2023, 2024, 2025
+]);
 
 export const heightClamp = (v) => {
   return Math.max(0, Math.min(state.maxHeight, v));
@@ -99,6 +102,47 @@ export async function resizeMap(newChunkX, newChunkZ) {
   });
 }
 
+export async function resizeMapEmpty(newChunkX, newChunkZ) {
+  await runLoading(async () => {
+
+    const newWidth = newChunkX * chunkSize;
+    const newHeight = newChunkZ * chunkSize;
+
+    state.map = Array.from({ length: newHeight }, () =>
+      new Array(newWidth).fill(0)
+    );
+
+    state.blockMap = Array.from({ length: state.maxHeight }, () =>
+      Array.from({ length: newHeight }, () =>
+        new Array(newWidth).fill(0)
+      )
+    );
+
+    state.layerMap = Array.from({ length: newHeight }, () =>
+      new Array(newWidth).fill(null)
+    );
+
+    state.chunkLenX = newChunkX;
+    state.chunkLenZ = newChunkZ;
+
+    state.chunkCols = newChunkX;
+    state.chunkRows = newChunkZ;
+
+    state.chunkCanvas = Array.from({ length: newChunkZ }, () =>
+      new Array(newChunkX).fill(null)
+    );
+
+    state.dirtyChunks.clear();
+
+    for (let cy = 0; cy < newChunkZ; cy++) {
+      for (let cx = 0; cx < newChunkX; cx++) {
+        state.dirtyChunks.add(`${cx},${cy}`);
+      }
+    }
+
+  });
+}
+
 export async function resizeHeight(newMaxHeight){
   await runLoading(async () => {
 
@@ -135,8 +179,38 @@ export async function resizeHeight(newMaxHeight){
   });
 }
 
+export async function resizeHeightEmpty(newMaxHeight){
+  await runLoading(async () => {
+
+    const width = state.widthLength;
+    const height = state.heightLength;
+
+    state.blockMap = Array.from({ length: newMaxHeight }, () =>
+      Array.from({ length: height }, () =>
+        new Array(width).fill(0)
+      )
+    );
+
+    state.maxHeight = newMaxHeight;
+
+    for(let cy = 0; cy < state.chunkRows; cy++){
+      for(let cx = 0; cx < state.chunkCols; cx++){
+        state.dirtyChunks.add(`${cx},${cy}`);
+      }
+    }
+
+  });
+}
+
 export function rebuildColumn(x, y, height){
   const safeTop = Math.min(state.maxHeight - 1, Math.floor(height));
+
+  for (let yy = safeTop; yy >= 0; yy--) {
+    const block = state.blockMap[yy]?.[y]?.[x];
+    if (LEAF_BLOCKS.has(block)) {
+      return;
+    }
+  }
 
   let layerIndex = 0;
   let remaining = brushState.blockLayers[0].depth;
@@ -162,7 +236,6 @@ export function rebuildColumn(x, y, height){
     state.blockMap[safeTop][y][x] = override;
   }
 }
-
 export function applyColumnChanges(changed){
   for (const key of changed) {
     const [x, y] = key.split(",").map(Number);

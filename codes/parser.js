@@ -2,7 +2,7 @@ import avro from "https://esm.sh/avsc@5.7.9";
 import { Buffer } from "https://esm.sh/buffer";
 import { nameToId } from "./nameMap.js";
 import { state, treesStructures } from "./state.js";
-import { resizeMap, resizeHeight} from "./utils.js";
+import { resizeMapEmpty, resizeHeightEmpty } from "./utils.js";
 
 const schema0 = avro.Type.forSchema({
 	type: "record",
@@ -124,6 +124,7 @@ function convertChunks(state) {
                 if (surfaceBlock && surfaceBlock !== 0) {
                   id = surfaceBlock;
                 } else {
+                  /*
                   const height = Math.floor(state.map[wz][wx]);
                   if (wy > height) {
                     id = 0; // 空気
@@ -134,6 +135,7 @@ function convertChunks(state) {
                   } else {
                     id = nameToId.Stone;
                   }
+                  */
                 }
               }
 
@@ -208,16 +210,34 @@ function convertTo3D(avroJson) {
 	return result;
 }
 
+function getBounds(blocks) {
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+  for (const b of blocks) {
+    if (b.id === 0) continue;
+
+    if (b.x < minX) minX = b.x;
+    if (b.y < minY) minY = b.y;
+    if (b.z < minZ) minZ = b.z;
+
+    if (b.x > maxX) maxX = b.x;
+    if (b.y > maxY) maxY = b.y;
+    if (b.z > maxZ) maxZ = b.z;
+  }
+
+  return { minX, minY, minZ, maxX, maxY, maxZ };
+}
+
 async function loadSchemAsWorld(result) {
-  const width = result.size[0];
-  const height = result.size[1];
-  const depth = result.size[2];
+  const bounds = getBounds(result.blocks);
 
-  const chunkX = Math.ceil(width / chunkSize);
-  const chunkZ = Math.ceil(depth / chunkSize);
+  const width  = bounds.maxX - bounds.minX + 1;
+  const height = bounds.maxY - bounds.minY + 1;
+  const depth  = bounds.maxZ - bounds.minZ + 1;
 
-  await resizeMap(chunkX, chunkZ);
-  await resizeHeight(height);
+  await resizeMapEmpty(Math.ceil(width / chunkSize), Math.ceil(depth / chunkSize));
+  await resizeHeightEmpty(height);
 
   for (let y = 0; y < state.maxHeight; y++) {
     for (let z = 0; z < state.heightLength; z++) {
@@ -227,7 +247,7 @@ async function loadSchemAsWorld(result) {
     }
   }
 
-  applyParsed(result);
+  applyParsed(result, bounds);
 }
 
 function rebuildHeight() {
@@ -253,19 +273,25 @@ function rebuildHeight() {
   }
 }
 
-function applyParsed(result) {
+function applyParsed(result, bounds) {
   for (const b of result.blocks) {
+    if (b.id === 0) continue;
+
+    const x = b.x - bounds.minX;
+    const y = b.y - bounds.minY;
+    const z = b.z - bounds.minZ;
+
     if (
-      b.x < 0 || b.z < 0 ||
-      b.x >= state.widthLength ||
-      b.z >= state.heightLength ||
-      b.y >= state.maxHeight
+      x < 0 || z < 0 ||
+      x >= state.widthLength ||
+      z >= state.heightLength ||
+      y >= state.maxHeight
     ) continue;
 
-    state.blockMap[b.y][b.z][b.x] = b.id;
+    state.blockMap[y][z][x] = b.id;
   }
 
-  rebuildHeight(); // ← 下で定義
+  rebuildHeight();
 }
 
 const splitBloxdschem = function (json) {
@@ -433,7 +459,8 @@ function loadSchem(file) {
 
         const buf = Buffer.from(uint8);
         const result = parse(buf);
-
+        console.log(result);
+        
         resolve(result);
       } catch (e) {
         reject(e);
