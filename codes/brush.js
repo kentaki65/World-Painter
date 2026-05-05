@@ -1,5 +1,5 @@
 import { state, brushState, chunkSize, cellSize, stackState } from "./state.js";
-import { heightClamp, lerp, applyColumnChanges } from "./utils.js";
+import { heightClamp, lerp, applyColumnChanges, markDirty } from "./utils.js";
 import { nameToId } from "./nameMap.js";
 
 let currentStroke = null;
@@ -34,12 +34,6 @@ function recordChange(x, y, before, after, type = "height") {
   } else {
     strokeMap.get(key).after = after;
   }
-}
-
-function markDirty(x, y) {
-  const cx = (x / chunkSize) | 0;
-  const cy = (y / chunkSize) | 0;
-  state.dirtyChunks.add(`${cx},${cy}`);
 }
 
 function normalBrush(cellX, cellY) {
@@ -144,7 +138,6 @@ function smoothBrush(cellX, cellY) {
 
 function sprayBrush(cellX, cellY) {
   const density = state.brushRadius * 3;
-  const changed = new Set();
 
   for (let i = 0; i < density; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -167,11 +160,8 @@ function sprayBrush(cellX, cellY) {
     recordChange(x, z, oldBlock, newBlock, "block");
 
     state.topBlockMap[z][x] = newBlock;
-    changed.add(`${x},${z}`);
     markDirty(x, z);
   }
-
-  applyColumnChanges(changed);
 }
 
 function layerBrush(cellX, cellY) {

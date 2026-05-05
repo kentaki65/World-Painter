@@ -236,6 +236,7 @@ export function rebuildColumn(x, y, height){
     state.blockMap[safeTop][y][x] = override;
   }
 }
+
 export function applyColumnChanges(changed){
   for (const key of changed) {
     const [x, y] = key.split(",").map(Number);
@@ -256,30 +257,66 @@ export function hideLoading() {
   document.getElementById("loadingOverlay").style.display = "none";
 }
 
+export function markDirty(x, y) {
+  const cx = (x / chunkSize) | 0;
+  const cy = (y / chunkSize) | 0;
+  state.dirtyChunks.add(`${cx},${cy}`);
+}
+
 export function undo() {
   const stroke = stackState.undoStack.pop();
   if (!stroke) return;
 
+  const heightChanged = new Set();
+
   for (const c of stroke) {
-    state.map[c.y][c.x] = c.before;
+    if (c.type === "height") {
+      state.map[c.y][c.x] = c.before;
+      heightChanged.add(`${c.x},${c.y}`);
+    } 
+    else if (c.type === "block") {
+      state.topBlockMap[c.y][c.x] = c.before;
+      markDirty(c.x, c.y);
+    } 
+    else if (c.type === "layer") {
+      state.layerMap[c.y][c.x] = c.before;
+      markDirty(c.x, c.y);
+    }
   }
 
   stackState.redoStack.push(stroke);
-  redrawFromStroke(stroke);
-  applyColumnChanges(new Set(stroke.map(c => `${c.x},${c.y}`)));
+
+  if (heightChanged.size > 0) {
+    applyColumnChanges(heightChanged);
+  }
 }
 
 export function redo() {
   const stroke = stackState.redoStack.pop();
   if (!stroke) return;
 
+  const heightChanged = new Set();
+
   for (const c of stroke) {
-    state.map[c.y][c.x] = c.after;
+    if (c.type === "height") {
+      state.map[c.y][c.x] = c.after;
+      heightChanged.add(`${c.x},${c.y}`);
+    } 
+    else if (c.type === "block") {
+      state.topBlockMap[c.y][c.x] = c.after;
+      markDirty(c.x, c.y);
+    } 
+    else if (c.type === "layer") {
+      state.layerMap[c.y][c.x] = c.after;
+      markDirty(c.x, c.y);
+    }
   }
 
   stackState.undoStack.push(stroke);
-  redrawFromStroke(stroke);
-  applyColumnChanges(new Set(stroke.map(c => `${c.x},${c.y}`)));
+
+  if (heightChanged.size > 0) {
+    applyColumnChanges(heightChanged);
+  }
 }
 
 export function redrawAllChunks(){
